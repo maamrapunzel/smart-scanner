@@ -187,7 +187,7 @@ function sheetSectionDefinitions(){
   ];
 }
 function sectionColumnCount(def,group){
-  if(def.type==='MCQ' || def.type==='TRUE/FALSE') return group.length>=6?2:1;
+  if(def.type==='MCQ' || def.type==='TRUE/FALSE') return group.length>=4?2:1;
   if(def.type==='WORD-BOX' || def.type==='ALGEBRAIC-BOX'){
     const longest=Math.max(1,...group.map(it=>{
       const answers=[it.key,...(it.accepted||[])].map(v=>String(v??'').replace(/\s+/g,''));
