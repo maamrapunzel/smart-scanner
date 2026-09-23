@@ -21,9 +21,15 @@
         <p>Scan • Check • Analyze • Record</p>
       </div>
     </div>
+    <div class="topbar-center" aria-hidden="true">
+      <span class="top-search-icon">⌕</span>
+      <span>Search tools, files, or help...</span>
+    </div>
     <div class="top-actions">
       <span id="storageBadge" class="pill">LOCAL DATA</span>
       <span id="netBadge" class="pill good">ONLINE</span>
+      <span class="top-icon">⚙</span>
+      <span class="profile-badge">SS</span>
     </div>
   </header>
 
@@ -34,103 +40,150 @@
       <button class="nav-btn" data-screen="scanner"><span>⌁</span> Scanner</button>
       <button class="nav-btn" data-screen="results"><span>▦</span> Results</button>
       <button class="nav-btn" data-screen="analysis"><span>▥</span> Analysis</button>
+      <div class="sidebar-quote">
+        <span>Make</span>
+        <span>Assessment</span>
+        <span>Easier & Smarter ♡</span>
+      </div>
       <div class="sidebar-note">
         <b>SMART SCANNER V2</b>
-        <span>GitHub Pages Edition</span>
+        <span>Offline Edition</span>
+        <small>Designed for Teachers ♥</small>
       </div>
     </aside>
 
     <main class="main-content">
-      <section id="dashboard" class="screen active">
-        <div class="hero-card">
-          <div>
-            <span class="eyebrow">SMART SCANNER</span>
-            <h2>Mixed Assessment Scanner</h2>
-            <p>One test can contain Multiple Choice, True/False, Numerical, and Algebraic items.</p>
-          </div>
-          <div class="hero-badge">V2</div>
-        </div>
+      <section id="dashboard" class="screen active dashboard-premium">
+        <section class="dash-hero">
+          <div class="dash-hero-copy">
+            <span class="dash-welcome">Welcome to</span>
+            <h2><span>SMART</span> SCANNER</h2>
+            <h3>Scan • Check • Analyze • Record</h3>
+            <p>One test. All item types. Smarter results.</p>
 
-        <div class="grid-2">
-          <article class="card">
-            <div class="card-title-row">
-              <div>
-                <h3>1. Master Excel</h3>
-                <p>Prepare test details, answer key, competencies, and learner list.</p>
-              </div>
-              <div class="step-chip">SETUP</div>
+            <div class="dash-feature-strip">
+              <div class="dash-feature-item"><i>▤</i><span>Multiple<br>Choice</span></div>
+              <div class="dash-feature-item"><i>✓</i><span>True / False</span></div>
+              <div class="dash-feature-item"><i>123</i><span>Numerical</span></div>
+              <div class="dash-feature-item"><i>x²</i><span>Algebraic</span></div>
+              <div class="dash-feature-item"><i>▥</i><span>Item<br>Analysis</span></div>
             </div>
-            <div class="button-row">
-              <a class="btn" href="SMART_SCANNER_MASTER_TEMPLATE.xlsx" download>Download Master Excel</a>
-              <label class="btn secondary file-btn">Upload Master Excel
+          </div>
+
+          <div class="dash-hero-art">
+            <div class="hero-quote">Empowering<br>Teachers,<br>Better Learners <b>♡</b></div>
+            <div class="teacher-orb">
+              <div class="teacher-face">👩‍🏫</div>
+              <div class="teacher-laptop">SS♥</div>
+            </div>
+            <div class="hero-note">Assess today for a<br>brighter tomorrow.</div>
+          </div>
+        </section>
+
+        <div class="dash-main-grid">
+          <article class="dash-panel master-panel">
+            <div class="dash-panel-header">
+              <div class="dash-heading-with-icon">
+                <span class="dash-heading-icon">▤</span>
+                <div>
+                  <h3>1. Master Excel File</h3>
+                  <p>Prepare test details, answer key, competencies, and learner list.</p>
+                </div>
+              </div>
+              <span class="dash-mini-chip">SETUP GUIDE</span>
+            </div>
+
+            <div class="master-action-grid">
+              <a class="master-action-btn download-master" href="SMART_SCANNER_MASTER_TEMPLATE.xlsx" download>
+                <span class="master-btn-icon">⇩</span>
+                <span><b>Download Master Excel</b><small>Get the template file</small></span>
+              </a>
+              <label class="master-action-btn upload-master">
+                <span class="master-btn-icon">⇧</span>
+                <span><b>Upload Master Excel</b><small>Select and upload your file</small></span>
                 <input id="excelInput" type="file" accept=".xlsx,.xls" hidden>
               </label>
             </div>
-            <div id="uploadStatus" class="status neutral">No assessment loaded yet.</div>
+            <div id="uploadStatus" class="master-status status neutral">No assessment loaded yet.</div>
           </article>
 
-          <article class="card">
-            <div class="card-title-row">
-              <div>
-                <h3>Assessment Summary</h3>
-                <p id="assessmentSubtitle">Upload a Master Excel to begin.</p>
+          <article class="dash-panel assessment-panel">
+            <div class="dash-panel-header">
+              <div class="dash-heading-with-icon">
+                <span class="dash-heading-icon">▥</span>
+                <div>
+                  <h3>Assessment Summary</h3>
+                  <p id="assessmentSubtitle">Upload a Master Excel to begin.</p>
+                </div>
               </div>
-              <div class="step-chip soft">LIVE</div>
+              <span class="live-data-chip">LIVE DATA</span>
             </div>
-            <div id="summaryEmpty" class="empty-state">No active assessment.</div>
+
+            <div id="summaryEmpty" class="empty-state dashboard-empty">No active assessment.</div>
             <div id="summaryBox" class="hide">
               <div class="summary-title" id="summaryTitle"></div>
-              <div class="kpi-grid">
-                <div class="kpi"><b id="sumItems">0</b><span>Items</span></div>
-                <div class="kpi"><b id="sumLearners">0</b><span>Learners</span></div>
-                <div class="kpi"><b id="sumCompetencies">0</b><span>Competencies</span></div>
-                <div class="kpi"><b id="sumPages">0</b><span>Pages</span></div>
+              <div class="dashboard-kpis">
+                <div class="dashboard-kpi kpi-items"><i>▤</i><div><b id="sumItems">0</b><span>Items</span></div></div>
+                <div class="dashboard-kpi kpi-learners"><i>●●●</i><div><b id="sumLearners">0</b><span>Learners</span></div></div>
+                <div class="dashboard-kpi kpi-competencies"><i>▥</i><div><b id="sumCompetencies">0</b><span>Competencies</span></div></div>
+                <div class="dashboard-kpi kpi-pages"><i>▧</i><div><b id="sumPages">0</b><span>Pages</span></div></div>
               </div>
-              <div id="typeBreakdown" class="chips"></div>
+              <div id="typeBreakdown" class="dashboard-type-breakdown chips"></div>
             </div>
           </article>
         </div>
 
-        <article class="card">
-          <div class="card-title-row">
-            <div>
-              <h3>Quick Actions</h3>
-              <p>Jump directly to the next step.</p>
-            </div>
+        <article class="dash-panel quick-actions-panel">
+          <div class="quick-actions-title">
+            <div><h3>⚡ Quick Actions</h3><p>Jump directly to what you need.</p></div>
+            <span>Shortcuts to save time ›</span>
           </div>
-          <div class="quick-grid">
-            <button class="quick-card" data-go="answersheet"><b>Answer Sheet</b><span>Preview and print personalized sheets</span></button>
-            <button class="quick-card" data-go="scanner"><b>Scan Papers</b><span>Live camera or photo upload</span></button>
-            <button class="quick-card" data-go="results"><b>View Results</b><span>Scores and learner responses</span></button>
-            <button class="quick-card" data-go="analysis"><b>Item Analysis</b><span>MPS, mastery, competencies</span></button>
+          <div class="premium-quick-grid">
+            <button class="premium-action action-answer" data-go="answersheet"><i>▤</i><span><b>Answer Sheet</b><small>Preview and print personalized sheets</small></span><em>›</em></button>
+            <button class="premium-action action-scan" data-go="scanner"><i>▣</i><span><b>Scan Papers</b><small>Live camera or photo upload</small></span><em>›</em></button>
+            <button class="premium-action action-results" data-go="results"><i>▥</i><span><b>View Results</b><small>Scores and learner responses</small></span><em>›</em></button>
+            <button class="premium-action action-analysis" data-go="analysis"><i>◔</i><span><b>Item Analysis</b><small>Item statistics and mastery insights</small></span><em>›</em></button>
           </div>
         </article>
 
-        <div class="grid-2">
-          <article class="card">
-            <h3>Data & Backup</h3>
-            <p>Your assessment and results are stored in this browser. Use backup before clearing browser data or moving devices.</p>
-            <div class="button-row">
-              <button id="backupBtn" class="secondary">Backup JSON</button>
-              <label class="btn secondary file-btn">Restore Backup
+        <div class="dashboard-bottom-grid">
+          <article class="dash-panel backup-panel">
+            <div class="bottom-card-heading">
+              <span class="bottom-card-icon">◉</span>
+              <div>
+                <h3>Data & Backup</h3>
+                <p>Your assessments and results are stored in this browser.</p>
+                <small>Use backup before clearing browser data or moving devices.</small>
+              </div>
+            </div>
+            <div class="backup-actions">
+              <button id="backupBtn" class="backup-btn backup-dark">⇩ Backup JSON</button>
+              <label class="backup-btn backup-light">⇧ Restore Backup
                 <input id="restoreInput" type="file" accept="application/json,.json" hidden>
               </label>
-              <button id="resetAssessmentBtn" class="danger">Clear Active Data</button>
+              <button id="resetAssessmentBtn" class="backup-btn backup-danger">♲ Clear Active Data</button>
             </div>
           </article>
 
-          <article class="card">
-            <h3>V2 Improvements</h3>
-            <div class="feature-list">
-              <span>✓ GitHub Pages / HTTPS</span>
-              <span>✓ Live camera is primary</span>
-              <span>✓ QR learner + page identification</span>
-              <span>✓ 4-corner page calibration</span>
-              <span>✓ MCQ and T/F auto-read</span>
-              <span>✓ Numerical, WORD, and Algebraic review crops</span>
-              <span>✓ Item + competency analysis</span>
-              <span>✓ Excel results export</span>
+          <article class="dash-panel activity-panel">
+            <div class="small-panel-header"><h3>◷ Session Flow</h3><span>SMART workflow</span></div>
+            <div class="activity-list">
+              <div class="activity-row"><i class="activity-dot green"></i><span>Load Master Excel</span><small>Step 1</small></div>
+              <div class="activity-row"><i class="activity-dot blue"></i><span>Print Answer Sheets</span><small>Step 2</small></div>
+              <div class="activity-row"><i class="activity-dot violet"></i><span>Scan Learner Papers</span><small>Step 3</small></div>
+              <div class="activity-row"><i class="activity-dot pink"></i><span>View Results & Analysis</span><small>Step 4</small></div>
             </div>
+          </article>
+
+          <article class="dash-panel tips-panel">
+            <div class="small-panel-header"><h3>💡 Tips & Reminders</h3></div>
+            <div class="tips-box">
+              <div><b>✓</b> Ensure answer sheets are printed clearly.</div>
+              <div><b>✓</b> Use good lighting when scanning.</div>
+              <div><b>✓</b> Check item analysis for learning gaps.</div>
+              <div><b>✓</b> Backup your data regularly.</div>
+            </div>
+            <div class="tips-script">Small Steps,<br>Big Learning! ♡</div>
           </article>
         </div>
       </section>
