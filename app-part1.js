@@ -145,3 +145,91 @@ function validateAssessment(a){
 }
 function mcqLabels(){ return Number(assessment?.info?.['MCQ Choices']||4)===5?['A','B','C','D','E']:['A','B','C','D']; }
 
+const SHEET_CONTENT_TOP_MM = 66;
+const SHEET_CONTENT_BOTTOM_MM = 270;
+const SECTION_HEAD_H_MM = 8;
+const BASIC_ROW_H_MM = 7;
+const BOX_ROW_H_MM = 8;
+const NUMERIC_BLOCK_H_MM = 42;
+const NUMERIC_SIGN_X_MM = 43;
+const NUMERIC_DIGIT_X0_MM = 63;
+const NUMERIC_DIGIT_X_STEP_MM = 16;
+const NUMERIC_DIGIT_Y0_MM = 10.5;
+const NUMERIC_DIGIT_Y_STEP_MM = 3.05;
+
+function canonicalSheetType(type){
+  if(type==='MCQ') return 'MCQ';
+  if(type==='TRUE/FALSE') return 'TRUE/FALSE';
+  if(['WORD','WORD-BOX'].includes(type)) return 'WORD-BOX';
+  if(['ALGEBRAIC','ALGEBRAIC-BOX'].includes(type)) return 'ALGEBRAIC-BOX';
+  if(['NUMERICAL','NUMERICAL-BOX'].includes(type)) return 'NUMERICAL-BOX';
+  return type;
+}
+function numericBubbleSpec(it){
+  const all=[it.key,...(it.accepted||[])].map(v=>String(v??'').trim()).filter(Boolean);
+  const integerOnly=all.length>0 && all.every(v=>/^[+-]?\d+$/.test(v));
+  const digits=Math.max(1,...all.map(v=>v.replace(/^[+-]/,'').length));
+  return {auto:integerOnly,digits:clamp(digits,1,6)};
+}
+function sheetItemHeight(it){
+  const t=canonicalSheetType(it.type);
+  if(t==='NUMERICAL-BOX' && numericBubbleSpec(it).auto) return NUMERIC_BLOCK_H_MM;
+  if(t==='WORD-BOX' || t==='ALGEBRAIC-BOX' || t==='NUMERICAL-BOX') return BOX_ROW_H_MM;
+  return BASIC_ROW_H_MM;
+}
+function sheetSectionDefinitions(){
+  return [
+    {type:'MCQ',title:'MULTIPLE CHOICE',instruction:'Shade one circle only.'},
+    {type:'TRUE/FALSE',title:'TRUE OR FALSE',instruction:'Shade T or F only.'},
+    {type:'WORD-BOX',title:'WORD / TEXT ANSWERS',instruction:'Write one character per box.'},
+    {type:'ALGEBRAIC-BOX',title:'ALGEBRAIC ANSWERS',instruction:'Write one character or symbol per box.'},
+    {type:'NUMERICAL-BOX',title:'NUMERIC ANSWERS',instruction:'Shade one digit per column. Use the single minus sign only when needed.'}
+  ];
+}
+function buildSectionedLayoutPages(){
+  if(!assessment) return [];
+  const pages=[];
+  const newPage=()=>{ const p={sections:[],items:[]}; pages.push(p); return p; };
+  let page=newPage(), y=SHEET_CONTENT_TOP_MM, visibleIndex=0;
+
+  for(const def of sheetSectionDefinitions()){
+    const group=assessment.items.filter(it=>canonicalSheetType(it.type)===def.type);
+    if(!group.length) continue;
+    const letter=String.fromCharCode(65+visibleIndex++);
+    let idx=0, continuation=false;
+
+    while(idx<group.length){
+      const firstH=sheetItemHeight(group[idx]);
+      if(y+SECTION_HEAD_H_MM+firstH>SHEET_CONTENT_BOTTOM_MM && page.items.length){
+        page=newPage(); y=SHEET_CONTENT_TOP_MM;
+      }
+      const sec={...def,letter,y,continuation,items:[]};
+      page.sections.push(sec);
+      y+=SECTION_HEAD_H_MM;
+
+      while(idx<group.length){
+        const it=group[idx], h=sheetItemHeight(it);
+        if(y+h>SHEET_CONTENT_BOTTOM_MM && sec.items.length) break;
+        if(y+h>SHEET_CONTENT_BOTTOM_MM && !sec.items.length){
+          page=newPage(); y=SHEET_CONTENT_TOP_MM;
+          break;
+        }
+        const layout={it,type:def.type,y,height:h,numericSpec:def.type==='NUMERICAL-BOX'?numericBubbleSpec(it):null};
+        sec.items.push(layout); page.items.push(layout);
+        y+=h; idx++;
+      }
+
+      continuation=true;
+      if(idx<group.length){
+        page=newPage(); y=SHEET_CONTENT_TOP_MM;
+      }else{
+        y+=2.5;
+      }
+    }
+  }
+  return pages.filter(p=>p.items.length);
+}
+function answerLayoutPage(pageNo){
+  return buildSectionedLayoutPages()[Math.max(0,Number(pageNo||1)-1)] || {sections:[],items:[]};
+}
+
