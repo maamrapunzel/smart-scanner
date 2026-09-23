@@ -27,7 +27,7 @@ function calculateLearnerResult(rec){
 // ---------- RESULTS / EXPORT ----------
 function renderResults(){
   const body=$('resultsBody'); body.innerHTML=''; if(!assessment){body.innerHTML='<tr><td colspan="8">Upload an assessment first.</td></tr>';return;}
-  const set=activeResultSet(),totalPages=Math.ceil(assessment.items.length/ITEMS_PER_PAGE); let n=0;
+  const set=activeResultSet(),totalPages=buildSectionedLayoutPages().length; let n=0;
   Object.values(set).sort((a,b)=>String(a.learner?.name||'').localeCompare(String(b.learner?.name||''))).forEach(rec=>{
     n++; const s=calculateLearnerResult(rec),pages=Object.keys(rec.pages||{}).length; body.insertAdjacentHTML('beforeend',`<tr><td>${n}</td><td>${escapeHtml(rec.learner.name)}</td><td>${escapeHtml(rec.learner.id||rec.learner.no||'')}</td><td>${pages}/${totalPages}</td><td>${formatNum(s.score)}</td><td>${formatNum(s.total)}</td><td>${s.pct.toFixed(1)}%</td><td>${s.pending}</td></tr>`);
   });
