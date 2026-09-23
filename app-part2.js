@@ -166,10 +166,13 @@ function buildAnswerPage(learner,pageNo,totalPages,layoutPage){
 function buildSectionBlock(sec){
   const cont=sec.continuation?' (cont.)':'';
   const head=`<div class="sheet-section-head" style="top:${sec.y}mm"><b>${sec.letter}. ${escapeHtml(sec.title)}${cont}</b><span>${escapeHtml(sec.instruction)}</span></div>`;
-  const divider=sec.columns===2
-    ? `<div class="sheet-section-divider" style="top:${sec.y+SECTION_HEAD_H_MM}mm;height:${sec.bodyHeight}mm"></div>`
+  const dividers=sec.columns>1
+    ? Array.from({length:sec.columns-1},(_,i)=>{
+        const left=17+(176/sec.columns)*(i+1);
+        return `<div class="sheet-section-divider" style="left:${left}mm;top:${sec.y+SECTION_HEAD_H_MM}mm;height:${sec.bodyHeight}mm"></div>`;
+      }).join('')
     : '';
-  return head+divider+sec.items.map(buildSectionedItem).join('');
+  return head+dividers+sec.items.map(buildSectionedItem).join('');
 }
 function boxCountForItem(it){
   const answers=[it.key,...(it.accepted||[])].map(v=>String(v??'').replace(/\s+/g,''));
@@ -194,18 +197,19 @@ function buildSectionedItem(layout){
   return `<div class="sheet-row box-row" style="top:${layout.y}mm"><span class="item-no" style="left:${itemLeft}mm">${it.no}.</span>${characterBoxesHtml(it,x)}</div>`;
 }
 function buildNumericBubbleItem(layout){
-  const it=layout.it,spec=layout.numericSpec,top=layout.y;
+  const it=layout.it,spec=layout.numericSpec,top=layout.y,x=layout.xOffset||0;
   const labels=Array.from({length:10},(_,n)=>n);
-  const sign=`<span class="numeric-col-label" style="left:${NUMERIC_SIGN_X_MM-5}mm">−</span><span class="numeric-mini-bubble sign-bubble" style="left:${NUMERIC_SIGN_X_MM-1.6}mm;top:${NUMERIC_DIGIT_Y0_MM-1.6}mm">−</span>`;
+  const signX=NUMERIC_SIGN_X_MM+x;
+  const sign=`<span class="numeric-col-label" style="left:${signX-5}mm">−</span><span class="numeric-mini-bubble sign-bubble" style="left:${signX-1.6}mm;top:${NUMERIC_DIGIT_Y0_MM-1.6}mm">−</span>`;
   const cols=Array.from({length:spec.digits},(_,col)=>{
-    const x=NUMERIC_DIGIT_X0_MM+col*NUMERIC_DIGIT_X_STEP_MM;
+    const cx=NUMERIC_DIGIT_X0_MM+x+col*NUMERIC_DIGIT_X_STEP_MM;
     const bubbles=labels.map(n=>{
       const y=NUMERIC_DIGIT_Y0_MM+n*NUMERIC_DIGIT_Y_STEP_MM;
-      return `<span class="numeric-mini-bubble" style="left:${x-1.6}mm;top:${y-1.6}mm">${n}</span>`;
+      return `<span class="numeric-mini-bubble" style="left:${cx-1.6}mm;top:${y-1.6}mm">${n}</span>`;
     }).join('');
-    return `<span class="numeric-col-label" style="left:${x-6}mm">Digit ${col+1}</span>${bubbles}`;
+    return `<span class="numeric-col-label" style="left:${cx-6}mm">Digit ${col+1}</span>${bubbles}`;
   }).join('');
-  return `<div class="numeric-item" style="top:${top}mm;height:${layout.height}mm"><span class="numeric-item-no">${it.no}.</span>${sign}${cols}</div>`;
+  return `<div class="numeric-item" style="top:${top}mm;height:${layout.height}mm"><span class="numeric-item-no" style="left:${19+x}mm">${it.no}.</span>${sign}${cols}</div>`;
 }
 function generateQRCodes(){
   document.querySelectorAll('.sheet-qr[data-qr]').forEach(el=>{
