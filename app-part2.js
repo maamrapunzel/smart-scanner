@@ -154,12 +154,21 @@ function buildAnswerPage(learner,pageNo,totalPages){
       <div class="sheet-line"><b>Section:</b>${escapeHtml(learner.section||assessment.info['Section']||'')}</div><div class="sheet-line"><b>Learner No.:</b>${escapeHtml(learner.no||'')}</div>
     </div>
     ${qrText?`<div class="sheet-qr" data-qr="${escapeHtml(qrText)}"></div>`:''}
-    <div class="sheet-instructions">Shade one circle completely for selected-response items. For Numerical, Algebraic, or WORD items, write clearly inside the answer box. Keep all four black squares clean.</div>
+    <div class="sheet-instructions">Shade one circle completely for selected-response items. For box-type items, write one character in each box. Keep all four black squares clean.</div>
     <div class="sheet-page-label">PAGE ${pageNo} OF ${totalPages}</div>
     ${rows}
     <div class="sheet-sign">School: ${escapeHtml(assessment.info['School']||'')} &nbsp;&nbsp; Teacher: ${escapeHtml(assessment.info['Teacher']||'')}</div>
     <div class="sheet-footer">SMART SCANNER • Scan • Check • Analyze • Record</div>
   </section>`;
+}
+function boxCountForItem(it){
+  const answers=[it.key,...(it.accepted||[])].map(v=>String(v??'').replace(/\s+/g,''));
+  const longest=Math.max(1,...answers.map(v=>v.length));
+  return clamp(longest,1,16);
+}
+function buildCharacterBoxes(it){
+  const count=boxCountForItem(it);
+  return `<span class="char-boxes">${Array.from({length:count},()=>'<span class="char-box"></span>').join('')}</span>`;
 }
 function buildAnswerRow(it,idx){
   const y=ROW_START_MM+idx*ROW_GAP_MM;
@@ -168,6 +177,8 @@ function buildAnswerRow(it,idx){
     control=mcqLabels().map((lab,j)=>`<span class="sheet-bubble" style="left:${MCQ_X_MM[j]-2.75}mm">${lab}</span>`).join('');
   }else if(it.type==='TRUE/FALSE'){
     control=`<span class="sheet-bubble" style="left:${TF_X_MM[0]-2.75}mm">T</span><span class="sheet-bubble" style="left:${TF_X_MM[1]-2.75}mm">F</span>`;
+  }else if(['NUMERICAL-BOX','WORD-BOX','ALGEBRAIC-BOX','NUMERICAL','WORD','ALGEBRAIC'].includes(it.type)){
+    control=buildCharacterBoxes(it);
   }else{
     control='<span class="write-area"></span>';
   }
