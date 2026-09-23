@@ -166,28 +166,32 @@ function buildAnswerPage(learner,pageNo,totalPages,layoutPage){
 function buildSectionBlock(sec){
   const cont=sec.continuation?' (cont.)':'';
   const head=`<div class="sheet-section-head" style="top:${sec.y}mm"><b>${sec.letter}. ${escapeHtml(sec.title)}${cont}</b><span>${escapeHtml(sec.instruction)}</span></div>`;
-  return head+sec.items.map(buildSectionedItem).join('');
+  const divider=sec.columns===2
+    ? `<div class="sheet-section-divider" style="top:${sec.y+SECTION_HEAD_H_MM}mm;height:${sec.bodyHeight}mm"></div>`
+    : '';
+  return head+divider+sec.items.map(buildSectionedItem).join('');
 }
 function boxCountForItem(it){
   const answers=[it.key,...(it.accepted||[])].map(v=>String(v??'').replace(/\s+/g,''));
   const longest=Math.max(1,...answers.map(v=>v.length));
   return clamp(longest,1,16);
 }
-function characterBoxesHtml(it){
+function characterBoxesHtml(it,xOffset=0){
   const count=boxCountForItem(it);
-  return `<span class="char-boxes">${Array.from({length:count},()=>'<span class="char-box"></span>').join('')}</span>`;
+  return `<span class="char-boxes" style="left:${36+xOffset}mm">${Array.from({length:count},()=>'<span class="char-box"></span>').join('')}</span>`;
 }
 function buildSectionedItem(layout){
-  const it=layout.it,t=layout.type;
+  const it=layout.it,t=layout.type,x=layout.xOffset||0;
+  const itemLeft=19+x;
   if(t==='MCQ'){
-    const bubbles=mcqLabels().map((lab,j)=>`<span class="sheet-bubble" style="left:${MCQ_X_MM[j]-2.4}mm">${lab}</span>`).join('');
-    return `<div class="sheet-row" style="top:${layout.y}mm"><span class="item-no">${it.no}.</span>${bubbles}</div>`;
+    const bubbles=mcqLabels().map((lab,j)=>`<span class="sheet-bubble" style="left:${MCQ_X_MM[j]+x-2.4}mm">${lab}</span>`).join('');
+    return `<div class="sheet-row" style="top:${layout.y}mm"><span class="item-no" style="left:${itemLeft}mm">${it.no}.</span>${bubbles}</div>`;
   }
   if(t==='TRUE/FALSE'){
-    return `<div class="sheet-row" style="top:${layout.y}mm"><span class="item-no">${it.no}.</span><span class="sheet-bubble" style="left:${TF_X_MM[0]-2.4}mm">T</span><span class="sheet-bubble" style="left:${TF_X_MM[1]-2.4}mm">F</span></div>`;
+    return `<div class="sheet-row" style="top:${layout.y}mm"><span class="item-no" style="left:${itemLeft}mm">${it.no}.</span><span class="sheet-bubble" style="left:${TF_X_MM[0]+x-2.4}mm">T</span><span class="sheet-bubble" style="left:${TF_X_MM[1]+x-2.4}mm">F</span></div>`;
   }
   if(t==='NUMERICAL-BOX' && layout.numericSpec?.auto) return buildNumericBubbleItem(layout);
-  return `<div class="sheet-row box-row" style="top:${layout.y}mm"><span class="item-no">${it.no}.</span>${characterBoxesHtml(it)}</div>`;
+  return `<div class="sheet-row box-row" style="top:${layout.y}mm"><span class="item-no" style="left:${itemLeft}mm">${it.no}.</span>${characterBoxesHtml(it,x)}</div>`;
 }
 function buildNumericBubbleItem(layout){
   const it=layout.it,spec=layout.numericSpec,top=layout.y;
