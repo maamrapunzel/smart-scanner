@@ -208,50 +208,70 @@ function buildSectionedLayoutPages(){
     if(!group.length) continue;
     const letter=String.fromCharCode(65+visibleIndex++);
     const columns=sectionColumnCount(def,group);
-    const rowH=def.type==='NUMERICAL-BOX' ? NUMERIC_BLOCK_H_MM :
-      ((def.type==='WORD-BOX'||def.type==='ALGEBRAIC-BOX') ? BOX_ROW_H_MM : BASIC_ROW_H_MM);
     let idx=0, continuation=false;
 
     while(idx<group.length){
-      let availableRows=Math.floor((SHEET_CONTENT_BOTTOM_MM-y-SECTION_HEAD_H_MM)/rowH);
-      if(availableRows<1){
-        if(page.items.length){ page=newPage(); y=SHEET_CONTENT_TOP_MM; continue; }
-        availableRows=1;
+      const firstH=sheetItemHeight(group[idx]);
+      if(y+SECTION_HEAD_H_MM+firstH>SHEET_CONTENT_BOTTOM_MM && page.items.length){
+        page=newPage(); y=SHEET_CONTENT_TOP_MM; continue;
       }
-      const remaining=group.length-idx;
-      const capacity=Math.max(1,availableRows*columns);
-      const count=Math.min(remaining,capacity);
-      const chunk=group.slice(idx,idx+count);
-      const rowsUsed=columns===2?Math.ceil(chunk.length/2):chunk.length;
-      const sec={...def,letter,y,continuation,columns,items:[],bodyHeight:rowsUsed*rowH};
+
+      const sec={...def,letter,y,continuation,columns,items:[],bodyHeight:0};
       page.sections.push(sec);
       const bodyTop=y+SECTION_HEAD_H_MM;
 
-      if(columns===2){
-        const leftCount=Math.ceil(chunk.length/2);
-        chunk.forEach((it,k)=>{
-          const col=k<leftCount?0:1;
-          const row=col===0?k:k-leftCount;
-          const layout={
-            it,type:def.type,y:bodyTop+row*rowH,height:rowH,
-            xOffset:col*88,column:col,columns,
-            numericSpec:def.type==='NUMERICAL-BOX'?numericBubbleSpec(it):null
-          };
+      if(def.type==='NUMERICAL-BOX'){
+        let cursorY=bodyTop;
+        while(idx<group.length){
+          const it=group[idx],h=sheetItemHeight(it);
+          if(cursorY+h>SHEET_CONTENT_BOTTOM_MM && sec.items.length) break;
+          if(cursorY+h>SHEET_CONTENT_BOTTOM_MM && !sec.items.length){
+            page.sections.pop();
+            page=newPage(); y=SHEET_CONTENT_TOP_MM;
+            break;
+          }
+          const layout={it,type:def.type,y:cursorY,height:h,xOffset:0,column:0,columns:1,numericSpec:numericBubbleSpec(it)};
           sec.items.push(layout); page.items.push(layout);
-        });
+          cursorY+=h; idx++;
+        }
+        if(sec.items.length){
+          sec.bodyHeight=cursorY-bodyTop;
+          y=cursorY+2.5;
+        }else{
+          continue;
+        }
       }else{
-        chunk.forEach((it,row)=>{
-          const layout={
-            it,type:def.type,y:bodyTop+row*rowH,height:sheetItemHeight(it),
-            xOffset:0,column:0,columns:1,
-            numericSpec:def.type==='NUMERICAL-BOX'?numericBubbleSpec(it):null
-          };
-          sec.items.push(layout); page.items.push(layout);
-        });
+        const rowH=(def.type==='WORD-BOX'||def.type==='ALGEBRAIC-BOX')?BOX_ROW_H_MM:BASIC_ROW_H_MM;
+        let availableRows=Math.floor((SHEET_CONTENT_BOTTOM_MM-bodyTop)/rowH);
+        if(availableRows<1){
+          page.sections.pop();
+          page=newPage(); y=SHEET_CONTENT_TOP_MM; continue;
+        }
+        const remaining=group.length-idx;
+        const capacity=Math.max(1,availableRows*columns);
+        const count=Math.min(remaining,capacity);
+        const chunk=group.slice(idx,idx+count);
+        const rowsUsed=columns===2?Math.ceil(chunk.length/2):chunk.length;
+
+        if(columns===2){
+          const leftCount=Math.ceil(chunk.length/2);
+          chunk.forEach((it,k)=>{
+            const col=k<leftCount?0:1;
+            const row=col===0?k:k-leftCount;
+            const layout={it,type:def.type,y:bodyTop+row*rowH,height:rowH,xOffset:col*88,column:col,columns};
+            sec.items.push(layout); page.items.push(layout);
+          });
+        }else{
+          chunk.forEach((it,row)=>{
+            const layout={it,type:def.type,y:bodyTop+row*rowH,height:rowH,xOffset:0,column:0,columns:1};
+            sec.items.push(layout); page.items.push(layout);
+          });
+        }
+        idx+=count;
+        sec.bodyHeight=rowsUsed*rowH;
+        y=bodyTop+sec.bodyHeight+2.5;
       }
 
-      idx+=count;
-      y=bodyTop+rowsUsed*rowH+2.5;
       continuation=true;
       if(idx<group.length){ page=newPage(); y=SHEET_CONTENT_TOP_MM; }
     }
