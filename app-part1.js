@@ -145,17 +145,25 @@ function validateAssessment(a){
 }
 function mcqLabels(){ return Number(assessment?.info?.['MCQ Choices']||4)===5?['A','B','C','D','E']:['A','B','C','D']; }
 
-const SHEET_CONTENT_TOP_MM = 66;
-const SHEET_CONTENT_BOTTOM_MM = 270;
-const SECTION_HEAD_H_MM = 8;
+const SHEET_CONTENT_TOP_MM = 57;
+const SHEET_CONTENT_BOTTOM_MM = 268;
+const SHEET_BLOCK_LEFT_X_MM = 17;
+const SHEET_BLOCK_RIGHT_X_MM = 106.5;
+const SHEET_BLOCK_W_MM = 86.5;
+const SHEET_BLOCK_HEAD_H_MM = 7.2;
+const SHEET_BLOCK_GAP_MM = 3.2;
 const BASIC_ROW_H_MM = 7;
-const BOX_ROW_H_MM = 8;
-const NUMERIC_BLOCK_H_MM = 42;
-const NUMERIC_SIGN_X_MM = 43;
-const NUMERIC_DIGIT_X0_MM = 63;
-const NUMERIC_DIGIT_X_STEP_MM = 16;
-const NUMERIC_DIGIT_Y0_MM = 10.5;
-const NUMERIC_DIGIT_Y_STEP_MM = 3.05;
+const BOX_ROW_H_MM = 9.2;
+
+const BLOCK_MCQ_BUBBLE_X_OFF = [25,36,47,58,69];
+const BLOCK_TF_BUBBLE_X_OFF = [31,49];
+
+const NUMERIC_ROW_TOP_MM = 5.2;
+const NUMERIC_ROW_GAP_MM = 5.0;
+const NUMERIC_SIGN_X_OFF_MM = 18;
+const NUMERIC_DIGIT_LABEL_X_OFF_MM = 24;
+const NUMERIC_DIGIT_X0_OFF_MM = 34;
+const NUMERIC_DIGIT_X_STEP_MM = 5.0;
 
 function canonicalSheetType(type){
   if(type==='MCQ') return 'MCQ';
@@ -171,162 +179,91 @@ function numericBubbleSpec(it){
   const digits=Math.max(1,...all.map(v=>v.replace(/^[+-]/,'').length));
   return {auto:integerOnly,digits:clamp(digits,1,6)};
 }
-function sheetItemHeight(it){
-  const t=canonicalSheetType(it.type);
-  if(t==='NUMERICAL-BOX' && numericBubbleSpec(it).auto) return NUMERIC_BLOCK_H_MM;
-  if(t==='WORD-BOX' || t==='ALGEBRAIC-BOX' || t==='NUMERICAL-BOX') return BOX_ROW_H_MM;
+function boxCountForSheetItem(it){
+  const answers=[it.key,...(it.accepted||[])].map(v=>String(v??'').replace(/\s+/g,''));
+  return clamp(Math.max(1,...answers.map(v=>v.length)),1,16);
+}
+function sheetBlockItemHeight(kind,it){
+  if(kind==='NUMERIC'){
+    const spec=numericBubbleSpec(it);
+    if(spec.auto) return 7.8 + spec.digits*NUMERIC_ROW_GAP_MM;
+    return BOX_ROW_H_MM;
+  }
+  if(kind==='WRITTEN') return BOX_ROW_H_MM;
   return BASIC_ROW_H_MM;
 }
-function sheetSectionDefinitions(){
-  return [
-    {type:'MCQ',title:'MULTIPLE CHOICE',instruction:'Shade one circle only.'},
-    {type:'TRUE/FALSE',title:'TRUE OR FALSE',instruction:'Shade T or F only.'},
-    {type:'WORD-BOX',title:'WORD / TEXT ANSWERS',instruction:'Write one character per box.'},
-    {type:'ALGEBRAIC-BOX',title:'ALGEBRAIC ANSWERS',instruction:'Write one character or symbol per box.'},
-    {type:'NUMERICAL-BOX',title:'NUMERIC ANSWERS',instruction:'Shade one digit per column. Use the single minus sign only when needed.'}
-  ];
-}
-function sectionColumnCount(def,group){
-  const n=group.length;
-  if(def.type==='MCQ'){
-    const maxCols=mcqLabels().length===4?3:2;
-    if(maxCols===3 && n>=5) return 3;
-    if(n>=3) return 2;
-    return 1;
-  }
-  if(def.type==='TRUE/FALSE'){
-    if(n>=5) return 3;
-    if(n>=3) return 2;
-    return 1;
-  }
-  if(def.type==='WORD-BOX' || def.type==='ALGEBRAIC-BOX'){
-    const longest=Math.max(1,...group.map(it=>{
-      const answers=[it.key,...(it.accepted||[])].map(v=>String(v??'').replace(/\s+/g,''));
-      return Math.max(1,...answers.map(v=>v.length));
-    }));
-    if(n>=5 && longest<=4) return 3;
-    if(n>=3 && longest<=8) return 2;
-    return 1;
-  }
-  if(def.type==='NUMERICAL-BOX'){
-    const specs=group.map(numericBubbleSpec);
-    const allAuto=specs.every(s=>s.auto);
-    const maxDigits=Math.max(1,...specs.map(s=>s.digits));
-    if(n>=2 && allAuto && maxDigits<=3) return 2;
-    return 1;
-  }
-  return 1;
-}
-function sheetSectionRuns(){
+function sheetBlockGroups(){
   if(!assessment) return [];
-  const defs=Object.fromEntries(sheetSectionDefinitions().map(d=>[d.type,d]));
-  const runs=[];
-  assessment.items.forEach(it=>{
-    const type=canonicalSheetType(it.type);
-    const def=defs[type]||{type,title:String(type||'ANSWERS'),instruction:''};
-    const last=runs[runs.length-1];
-    if(last && last.def.type===type) last.group.push(it);
-    else runs.push({def,group:[it]});
+  const buckets=new Map();
+  const meta={
+    MCQ:{key:'MCQ',title:'MULTIPLE CHOICE',instruction:'Shade one circle only.'},
+    WRITTEN:{key:'WRITTEN',title:'ALGEBRAIC / WORD ANSWERS',instruction:'Write one character or symbol per box.'},
+    NUMERIC:{key:'NUMERIC',title:'NUMERIC ANSWERS',instruction:'Shade one digit per row. Use the minus sign only when needed.'},
+    TF:{key:'TF',title:'TRUE OR FALSE',instruction:'Shade T or F only.'}
+  };
+  assessment.items.forEach((it,index)=>{
+    const t=canonicalSheetType(it.type);
+    const key=t==='MCQ'?'MCQ':t==='TRUE/FALSE'?'TF':t==='NUMERICAL-BOX'?'NUMERIC':(['WORD-BOX','ALGEBRAIC-BOX'].includes(t)?'WRITTEN':'WRITTEN');
+    if(!buckets.has(key)) buckets.set(key,{...meta[key],items:[],firstIndex:index});
+    buckets.get(key).items.push(it);
   });
-  return runs;
+  return [...buckets.values()].sort((a,b)=>a.firstIndex-b.firstIndex).map((g,i)=>({...g,letter:String.fromCharCode(65+i),side:i%2===0?'left':'right'}));
+}
+function buildColumnLayoutPages(groups,side){
+  const x=side==='left'?SHEET_BLOCK_LEFT_X_MM:SHEET_BLOCK_RIGHT_X_MM;
+  const pages=[];
+  const ensurePage=i=>{ while(pages.length<=i) pages.push({sections:[],items:[]}); return pages[i]; };
+  let pageIndex=0,y=SHEET_CONTENT_TOP_MM;
+
+  for(const group of groups.filter(g=>g.side===side)){
+    let idx=0,continuation=false;
+    while(idx<group.items.length){
+      let page=ensurePage(pageIndex);
+      const firstH=sheetBlockItemHeight(group.key,group.items[idx]);
+      if(y+SHEET_BLOCK_HEAD_H_MM+firstH>SHEET_CONTENT_BOTTOM_MM && page.items.length){
+        pageIndex++; y=SHEET_CONTENT_TOP_MM; continue;
+      }
+      const sec={
+        key:group.key,letter:group.letter,title:group.title,instruction:group.instruction,
+        x,y,width:SHEET_BLOCK_W_MM,continuation,items:[],bodyHeight:0
+      };
+      page.sections.push(sec);
+      const bodyTop=y+SHEET_BLOCK_HEAD_H_MM;
+      let cursorY=bodyTop;
+
+      while(idx<group.items.length){
+        const it=group.items[idx],h=sheetBlockItemHeight(group.key,it);
+        if(cursorY+h>SHEET_CONTENT_BOTTOM_MM && sec.items.length) break;
+        if(cursorY+h>SHEET_CONTENT_BOTTOM_MM && !sec.items.length){
+          page.sections.pop(); pageIndex++; y=SHEET_CONTENT_TOP_MM; page=null; break;
+        }
+        const layout={
+          it,kind:group.key,x,y:cursorY,width:SHEET_BLOCK_W_MM,height:h,
+          numericSpec:group.key==='NUMERIC'?numericBubbleSpec(it):null
+        };
+        sec.items.push(layout); page.items.push(layout);
+        cursorY+=h; idx++;
+      }
+      if(!page) continue;
+
+      sec.bodyHeight=cursorY-bodyTop;
+      y=cursorY+SHEET_BLOCK_GAP_MM;
+      continuation=true;
+      if(idx<group.items.length){ pageIndex++; y=SHEET_CONTENT_TOP_MM; }
+    }
+  }
+  return pages;
 }
 function buildSectionedLayoutPages(){
   if(!assessment) return [];
-  const pages=[];
-  const newPage=()=>{ const p={sections:[],items:[]}; pages.push(p); return p; };
-  let page=newPage(), y=SHEET_CONTENT_TOP_MM, visibleIndex=0;
-
-  for(const run of sheetSectionRuns()){
-    const def=run.def, group=run.group;
-    const letter=String.fromCharCode(65+visibleIndex++);
-    const columns=sectionColumnCount(def,group);
-    let idx=0, continuation=false;
-
-    while(idx<group.length){
-      const isNumeric=def.type==='NUMERICAL-BOX';
-      const rowH=isNumeric
-        ? (columns>1 ? NUMERIC_BLOCK_H_MM : sheetItemHeight(group[idx]))
-        : ((def.type==='WORD-BOX'||def.type==='ALGEBRAIC-BOX')?BOX_ROW_H_MM:BASIC_ROW_H_MM);
-
-      if(y+SECTION_HEAD_H_MM+rowH>SHEET_CONTENT_BOTTOM_MM && page.items.length){
-        page=newPage(); y=SHEET_CONTENT_TOP_MM; continue;
-      }
-
-      const sec={...def,letter,y,continuation,columns,items:[],bodyHeight:0};
-      page.sections.push(sec);
-      const bodyTop=y+SECTION_HEAD_H_MM;
-
-      // Safe multi-column sections use balanced column-major packing.
-      if(columns>1){
-        const availableRows=Math.floor((SHEET_CONTENT_BOTTOM_MM-bodyTop)/rowH);
-        if(availableRows<1){
-          page.sections.pop();
-          page=newPage(); y=SHEET_CONTENT_TOP_MM; continue;
-        }
-        const remaining=group.length-idx;
-        const capacity=Math.max(1,availableRows*columns);
-        const count=Math.min(remaining,capacity);
-        const chunk=group.slice(idx,idx+count);
-        const rowsUsed=Math.ceil(chunk.length/columns);
-        const colWidth=176/columns;
-
-        chunk.forEach((it,k)=>{
-          const col=Math.floor(k/rowsUsed);
-          const row=k%rowsUsed;
-          const layout={
-            it,type:def.type,y:bodyTop+row*rowH,height:rowH,
-            xOffset:col*colWidth,column:col,columns,
-            numericSpec:isNumeric?numericBubbleSpec(it):null
-          };
-          sec.items.push(layout); page.items.push(layout);
-        });
-
-        idx+=count;
-        sec.bodyHeight=rowsUsed*rowH;
-        y=bodyTop+sec.bodyHeight+2.5;
-      }else if(isNumeric){
-        // Numeric items that are too wide or non-integer stay single-column.
-        let cursorY=bodyTop;
-        while(idx<group.length){
-          const it=group[idx],h=sheetItemHeight(it);
-          if(cursorY+h>SHEET_CONTENT_BOTTOM_MM && sec.items.length) break;
-          if(cursorY+h>SHEET_CONTENT_BOTTOM_MM && !sec.items.length){
-            page.sections.pop();
-            page=newPage(); y=SHEET_CONTENT_TOP_MM;
-            break;
-          }
-          const layout={it,type:def.type,y:cursorY,height:h,xOffset:0,column:0,columns:1,numericSpec:numericBubbleSpec(it)};
-          sec.items.push(layout); page.items.push(layout);
-          cursorY+=h; idx++;
-        }
-        if(sec.items.length){
-          sec.bodyHeight=cursorY-bodyTop;
-          y=cursorY+2.5;
-        }else{
-          continue;
-        }
-      }else{
-        const availableRows=Math.floor((SHEET_CONTENT_BOTTOM_MM-bodyTop)/rowH);
-        if(availableRows<1){
-          page.sections.pop();
-          page=newPage(); y=SHEET_CONTENT_TOP_MM; continue;
-        }
-        const remaining=group.length-idx;
-        const count=Math.min(remaining,availableRows);
-        const chunk=group.slice(idx,idx+count);
-        chunk.forEach((it,row)=>{
-          const layout={it,type:def.type,y:bodyTop+row*rowH,height:rowH,xOffset:0,column:0,columns:1};
-          sec.items.push(layout); page.items.push(layout);
-        });
-        idx+=count;
-        sec.bodyHeight=chunk.length*rowH;
-        y=bodyTop+sec.bodyHeight+2.5;
-      }
-
-      continuation=true;
-      if(idx<group.length){ page=newPage(); y=SHEET_CONTENT_TOP_MM; }
-    }
-  }
+  const groups=sheetBlockGroups();
+  const left=buildColumnLayoutPages(groups,'left');
+  const right=buildColumnLayoutPages(groups,'right');
+  const count=Math.max(left.length,right.length,1);
+  const pages=Array.from({length:count},(_,i)=>({
+    sections:[...(left[i]?.sections||[]),...(right[i]?.sections||[])],
+    items:[...(left[i]?.items||[]),...(right[i]?.items||[])]
+  }));
   return pages.filter(p=>p.items.length);
 }
 function answerLayoutPage(pageNo){
