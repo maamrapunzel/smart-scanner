@@ -143,13 +143,14 @@ function fileSlug(s){
 function buildAnswerPage(learner,pageNo,totalPages){
   const key=learnerKey(learner);
   const qrText=learner.generic?'':`SS2|${assessment.id}|${encodeURIComponent(key)}|${pageNo}`;
+  const totalPoints=assessment.items.reduce((sum,it)=>sum+(Number(it.points)||0),0);
   const items=assessment.items.slice((pageNo-1)*ITEMS_PER_PAGE,pageNo*ITEMS_PER_PAGE);
   const rows=items.map((it,idx)=>buildAnswerRow(it,idx)).join('');
   return `<section class="answer-page">
     <div class="marker m-tl"></div><div class="marker m-tr"></div><div class="marker m-bl"></div><div class="marker m-br"></div>
     <div class="sheet-head"><h3>SMART SCANNER ANSWER SHEET</h3><div class="meta">${escapeHtml(assessment.info['Assessment Title']||'Assessment')} • ${escapeHtml(assessment.info['Subject']||'')} • ${escapeHtml(assessment.info['Term']||'')}</div></div>
     <div class="sheet-student">
-      <div class="sheet-line"><b>Name:</b>${escapeHtml(learner.name||'')}</div><div class="sheet-line"><b>LRN / ID:</b>${escapeHtml(learner.id||'')}</div>
+      <div class="sheet-line"><b>Name:</b>${escapeHtml(learner.name||'')}</div><div class="sheet-line score-line"><b>Score:</b><span class="score-space"></span><span class="score-total">/ ${formatNum(totalPoints)}</span></div>
       <div class="sheet-line"><b>Section:</b>${escapeHtml(learner.section||assessment.info['Section']||'')}</div><div class="sheet-line"><b>Learner No.:</b>${escapeHtml(learner.no||'')}</div>
     </div>
     ${qrText?`<div class="sheet-qr" data-qr="${escapeHtml(qrText)}"></div>`:''}
