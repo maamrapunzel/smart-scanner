@@ -91,7 +91,7 @@ function analyzeImage(img,canvas,pageNo){
     }else if(it.type==='TRUE/FALSE'){
       const r=detectBubbles(img,H,TF_X_MM,y,['TRUE','FALSE']); answers[it.no]=r.value; metrics[it.no]=r;
     }else{
-      answers[it.no]=''; metrics[it.no]={value:'',confidence:0,manual:true}; crops[it.no]=makeCropDataUrl(canvas,H,96,y-3.5,193,y+3.5);
+      answers[it.no]=''; metrics[it.no]={value:'',confidence:0,manual:true}; crops[it.no]=makeCropDataUrl(canvas,H,35,y-3.5,170,y+3.5);
     }
   });
   const markerScore=(markers.tl.score+markers.tr.score+markers.br.score+markers.bl.score)/4;
