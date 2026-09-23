@@ -134,6 +134,7 @@ function normalizeType(v){
   if(['TRUE/FALSE','TRUE OR FALSE','T/F','TF'].includes(s)) return 'TRUE/FALSE';
   if(['NUMERICAL','NUMERIC','NUMBER'].includes(s)) return 'NUMERICAL';
   if(['ALGEBRAIC','ALGEBRA','EXPRESSION','ALGEBRAIC EXPRESSION'].includes(s)) return 'ALGEBRAIC';
+  if(['WORD','SHORT ANSWER','TEXT','WORD ANSWER'].includes(s)) return 'WORD';
   return '';
 }
 function validateAssessment(a){
