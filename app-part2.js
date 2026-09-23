@@ -170,7 +170,7 @@ function buildAnswerRow(it,idx){
   }else{
     control='<span class="write-area"></span>';
   }
-  return `<div class="sheet-row" style="top:${y-3.7}mm"><span class="item-no">${it.no}.</span><span class="item-type">${escapeHtml(it.type)}</span>${control}</div>`;
+  return `<div class="sheet-row" style="top:${y-3.7}mm"><span class="item-no">${it.no}.</span>${control}</div>`;
 }
 function generateQRCodes(){
   document.querySelectorAll('.sheet-qr[data-qr]').forEach(el=>{
