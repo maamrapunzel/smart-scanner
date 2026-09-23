@@ -84,28 +84,42 @@ function analyzeImage(img,canvas,pageNo){
   const H=homographyFromPageMM([markers.tl,markers.tr,markers.br,markers.bl]);
   const page=answerLayoutPage(pageNo);
   const answers={},crops={},metrics={};
+
   page.items.forEach(layout=>{
-    const it=layout.it,t=layout.type,x=layout.xOffset||0;
-    if(t==='MCQ'){
+    const it=layout.it;
+
+    if(layout.kind==='MCQ'){
       const y=layout.y+BASIC_ROW_H_MM/2;
-      const xs=MCQ_X_MM.slice(0,mcqLabels().length).map(v=>v+x);
+      const xs=mcqLabels().map((_,j)=>layout.x+BLOCK_MCQ_BUBBLE_X_OFF[j]);
       const r=detectBubbles(img,H,xs,y,mcqLabels());
       answers[it.no]=r.value; metrics[it.no]=r;
-    }else if(t==='TRUE/FALSE'){
+      return;
+    }
+
+    if(layout.kind==='TF'){
       const y=layout.y+BASIC_ROW_H_MM/2;
-      const r=detectBubbles(img,H,TF_X_MM.map(v=>v+x),y,['TRUE','FALSE']);
+      const xs=BLOCK_TF_BUBBLE_X_OFF.map(v=>layout.x+v);
+      const r=detectBubbles(img,H,xs,y,['TRUE','FALSE']);
       answers[it.no]=r.value; metrics[it.no]=r;
-    }else if(t==='NUMERICAL-BOX' && layout.numericSpec?.auto){
+      return;
+    }
+
+    if(layout.kind==='NUMERIC' && layout.numericSpec?.auto){
       const r=detectNumericBubbleAnswer(img,H,layout);
       answers[it.no]=r.value; metrics[it.no]=r;
-    }else{
-      answers[it.no]='';
-      metrics[it.no]={value:'',confidence:0,manual:true};
-      const cropX1=32+x;
-      const cropX2=layout.columns===2?Math.min(102+x,193):175;
-      crops[it.no]=makeCropDataUrl(canvas,H,cropX1,layout.y,cropX2,Math.min(layout.y+layout.height,274));
+      return;
     }
+
+    answers[it.no]='';
+    metrics[it.no]={value:'',confidence:0,manual:true};
+    crops[it.no]=makeCropDataUrl(
+      canvas,H,
+      layout.x+14,layout.y,
+      layout.x+layout.width-3,
+      Math.min(layout.y+layout.height,SHEET_CONTENT_BOTTOM_MM)
+    );
   });
+
   const markerScore=(markers.tl.score+markers.tr.score+markers.br.score+markers.bl.score)/4;
   return {answers,crops,metrics,markerScore};
 }
