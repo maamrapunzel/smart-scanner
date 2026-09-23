@@ -119,7 +119,9 @@ async function exportAnswerSheetPng(mode){
   const original=button.textContent; button.disabled=true; button.textContent=oldText;
   try{
     for(let i=0;i<sheets.length;i++){
+      sheets[i].classList.add('png-export');
       const canvas=await html2canvas(sheets[i],{backgroundColor:'#ffffff',scale:2,useCORS:true,logging:false});
+      sheets[i].classList.remove('png-export');
       const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png',1));
       if(!blob) throw new Error('PNG conversion failed.');
       const layout=currentSheetLayout().toUpperCase();
