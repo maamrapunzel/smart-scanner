@@ -35,6 +35,7 @@ button,.btn,select,input{font:inherit}.hide{display:none!important}.no-select{us
 .sheet-rule{position:absolute;left:17mm;right:55mm;top:23mm;font-size:6.8pt;font-weight:800;letter-spacing:.15mm;color:#4d3944}
 .sheet-section-head{position:absolute;left:17mm;right:17mm;height:6.3mm;background:#fff1f7;border-top:.35mm solid #171717;border-bottom:.25mm solid #171717;display:flex;align-items:center;justify-content:space-between;padding:0 2.2mm;font-size:7.7pt}
 .sheet-section-head b{font-size:8.5pt}.sheet-section-head span{font-size:6.7pt;font-weight:600;color:#4e454b}
+.sheet-section-divider{position:absolute;left:105mm;width:.22mm;background:#b9b0b5;opacity:.8}
 .sectioned-sheet .sheet-row{height:7mm;border-bottom:.18mm solid #eee}
 .sectioned-sheet .sheet-row .item-no{left:19mm;top:1.15mm;font-size:8.6pt}
 .sectioned-sheet .sheet-bubble{top:1.05mm;width:4.8mm;height:4.8mm;border:.38mm solid #000;font-size:6.2pt}
