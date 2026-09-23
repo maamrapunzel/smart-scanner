@@ -73,28 +73,40 @@ function miniBubbleDarkness(img,H,xmm,ymm){
   }
   return {avg:sum/n,ratio:dark/n};
 }
-function detectNumericDigit(img,H,x,topY){
+function detectNumericDigitRow(img,H,layout,digitIndex){
+  const y=layout.y+NUMERIC_ROW_TOP_MM+digitIndex*NUMERIC_ROW_GAP_MM;
   const vals=Array.from({length:10},(_,digit)=>{
-    const y=topY+NUMERIC_DIGIT_Y0_MM+digit*NUMERIC_DIGIT_Y_STEP_MM;
+    const x=layout.x+NUMERIC_DIGIT_X0_OFF_MM+digit*NUMERIC_DIGIT_X_STEP_MM;
     return {digit,...miniBubbleDarkness(img,H,x,y)};
   }).sort((a,b)=>b.avg-a.avg);
+
   const top=vals[0],second=vals[1]||{avg:0},gap=top.avg-second.avg;
   const confidence=clamp((gap/22)+(top.avg-30)/75,0,1);
   return {value:(top.avg>39&&gap>5)?String(top.digit):'',confidence,top:top.avg,gap};
 }
 function detectNumericBubbleAnswer(img,H,layout){
-  const spec=layout.numericSpec||{digits:1},xOffset=layout.xOffset||0;
+  const spec=layout.numericSpec||{digits:1};
   const digits=[],conf=[];
-  for(let col=0;col<spec.digits;col++){
-    const x=NUMERIC_DIGIT_X0_MM+xOffset+col*NUMERIC_DIGIT_X_STEP_MM;
-    const r=detectNumericDigit(img,H,x,layout.y);
-    digits.push(r.value); conf.push(r.confidence);
+
+  for(let digitIndex=0;digitIndex<spec.digits;digitIndex++){
+    const r=detectNumericDigitRow(img,H,layout,digitIndex);
+    digits.push(r.value);
+    conf.push(r.confidence);
   }
-  const sign=miniBubbleDarkness(img,H,NUMERIC_SIGN_X_MM+xOffset,layout.y+NUMERIC_DIGIT_Y0_MM);
+
+  const signX=layout.x+NUMERIC_SIGN_X_OFF_MM;
+  const signY=layout.y+NUMERIC_ROW_TOP_MM;
+  const sign=miniBubbleDarkness(img,H,signX,signY);
   const negative=sign.avg>78;
   const complete=digits.every(Boolean);
   const value=complete?(negative?'-':'')+digits.join(''):'';
-  return {value,confidence:conf.length?Math.min(...conf):0,autoNumeric:true,signDarkness:sign.avg};
+
+  return {
+    value,
+    confidence:conf.length?Math.min(...conf):0,
+    autoNumeric:true,
+    signDarkness:sign.avg
+  };
 }
 function makeCropDataUrl(src,H,x1,y1,x2,y2){
   const pts=[mapH(H,x1,y1),mapH(H,x2,y1),mapH(H,x2,y2),mapH(H,x1,y2)],xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
