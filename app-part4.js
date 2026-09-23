@@ -63,6 +63,39 @@ function detectBubbles(img,H,xs,y,labels){
   const gap=top.avg-second.avg, confidence=clamp((gap/26)+(top.avg-35)/70,0,1); const value=(top.avg>43&&gap>7)?labels[top.i]:'';
   return {value,confidence,top:top.avg,gap};
 }
+
+function miniBubbleDarkness(img,H,xmm,ymm){
+  let sum=0,n=0,dark=0;
+  for(let dy=-1.25;dy<=1.25;dy+=.32) for(let dx=-1.25;dx<=1.25;dx+=.32){
+    if(dx*dx+dy*dy>1.55) continue;
+    const p=mapH(H,xmm+dx,ymm+dy),g=grayAt(img,p.x,p.y);
+    sum+=255-g; if(g<135) dark++; n++;
+  }
+  return {avg:sum/n,ratio:dark/n};
+}
+function detectNumericDigit(img,H,x,topY){
+  const vals=Array.from({length:10},(_,digit)=>{
+    const y=topY+NUMERIC_DIGIT_Y0_MM+digit*NUMERIC_DIGIT_Y_STEP_MM;
+    return {digit,...miniBubbleDarkness(img,H,x,y)};
+  }).sort((a,b)=>b.avg-a.avg);
+  const top=vals[0],second=vals[1]||{avg:0},gap=top.avg-second.avg;
+  const confidence=clamp((gap/22)+(top.avg-30)/75,0,1);
+  return {value:(top.avg>39&&gap>5)?String(top.digit):'',confidence,top:top.avg,gap};
+}
+function detectNumericBubbleAnswer(img,H,layout){
+  const spec=layout.numericSpec||{digits:1};
+  const digits=[],conf=[];
+  for(let col=0;col<spec.digits;col++){
+    const x=NUMERIC_DIGIT_X0_MM+col*NUMERIC_DIGIT_X_STEP_MM;
+    const r=detectNumericDigit(img,H,x,layout.y);
+    digits.push(r.value); conf.push(r.confidence);
+  }
+  const sign=miniBubbleDarkness(img,H,NUMERIC_SIGN_X_MM,layout.y+NUMERIC_DIGIT_Y0_MM);
+  const negative=sign.avg>78;
+  const complete=digits.every(Boolean);
+  const value=complete?(negative?'-':'')+digits.join(''):'';
+  return {value,confidence:conf.length?Math.min(...conf):0,autoNumeric:true,signDarkness:sign.avg};
+}
 function makeCropDataUrl(src,H,x1,y1,x2,y2){
   const pts=[mapH(H,x1,y1),mapH(H,x2,y1),mapH(H,x2,y2),mapH(H,x1,y2)],xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
   const minX=clamp(Math.floor(Math.min(...xs)),0,src.width-1),minY=clamp(Math.floor(Math.min(...ys)),0,src.height-1),maxX=clamp(Math.ceil(Math.max(...xs)),1,src.width),maxY=clamp(Math.ceil(Math.max(...ys)),1,src.height);
@@ -71,13 +104,13 @@ function makeCropDataUrl(src,H,x1,y1,x2,y2){
 function renderReview(){
   const box=$('reviewList');
   if(!pendingReview){ box.innerHTML='<div class="empty-state">No scanned page yet.</div>'; $('reviewCount').textContent='0'; return; }
-  const pageItems=assessment.items.slice((pendingReview.pageNo-1)*ITEMS_PER_PAGE,pendingReview.pageNo*ITEMS_PER_PAGE); $('reviewCount').textContent=String(pageItems.length);
+  const pageItems=answerLayoutPage(pendingReview.pageNo).items.map(x=>x.it); $('reviewCount').textContent=String(pageItems.length);
   box.innerHTML=pageItems.map(it=>{
     const v=pendingReview.answers[it.no]||'',m=pendingReview.metrics[it.no]||{},conf=Math.round((m.confidence||0)*100);
     let control='';
     if(it.type==='MCQ') control=`<div class="review-control-row"><select data-review="${it.no}"><option value="">— unread —</option>${mcqLabels().map(x=>`<option value="${x}" ${v===x?'selected':''}>${x}</option>`).join('')}</select><span class="answer-confidence ${conf>=65?'high':'low'}">${conf}%</span></div>`;
     else if(it.type==='TRUE/FALSE') control=`<div class="review-control-row"><select data-review="${it.no}"><option value="">— unread —</option><option value="TRUE" ${v==='TRUE'?'selected':''}>TRUE</option><option value="FALSE" ${v==='FALSE'?'selected':''}>FALSE</option></select><span class="answer-confidence ${conf>=65?'high':'low'}">${conf}%</span></div>`;
-    else control=`${pendingReview.crops[it.no]?`<img class="crop-preview" src="${pendingReview.crops[it.no]}" alt="Item ${it.no} cropped answer">`:''}<input type="text" data-review="${it.no}" placeholder="Type learner answer after reviewing the crop">`;
+    else control=`${pendingReview.crops[it.no]?`<img class="crop-preview" src="${pendingReview.crops[it.no]}" alt="Item ${it.no} cropped answer">`:''}<input type="text" data-review="${it.no}" value="${escapeHtml(v)}" placeholder="Type learner answer after reviewing the crop">${m.autoNumeric?`<span class="answer-confidence ${conf>=65?'high':'low'}">${conf}% auto-read</span>`:''}`;
     return `<div class="review-item"><div class="review-head"><span>Item ${it.no}</span><span>${escapeHtml(it.type)}</span></div><div class="review-meta">Key: ${escapeHtml(it.key)}${it.accepted.length?' • Accepted: '+escapeHtml(it.accepted.join(' | ')):''}${it.competencyCode?' • '+escapeHtml(it.competencyCode):''}</div>${control}</div>`;
   }).join('');
 }
