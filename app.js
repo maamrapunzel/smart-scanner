@@ -29,8 +29,9 @@
       let type='',key='',code='',skill='';
       if(i<=20){ type='MCQ'; key=['A','B','C','D'][(i-1)%4]; code=i<=10?'M8-SAMPLE-01':'M8-SAMPLE-02'; skill=i<=10?'Sample Competency 1 — replace this text':'Sample Competency 2 — replace this text'; }
       else if(i<=30){ type='TRUE/FALSE'; key=i%2?'TRUE':'FALSE'; code='M8-SAMPLE-03'; skill='Sample Competency 3 — replace this text'; }
-      else if(i<=40){ type='NUMERICAL'; key=String(i-25); code='M8-SAMPLE-04'; skill='Sample Numerical Skill — replace this text'; }
-      else if(i<=50){ type='ALGEBRAIC'; key='2x+6'; code='M8-SAMPLE-05'; skill='Sample Algebraic Skill — replace this text'; }
+      else if(i<=35){ type='NUMERICAL'; key=String(i-25); code='M8-SAMPLE-04'; skill='Sample Numerical Skill — replace this text'; }
+      else if(i<=40){ type='WORD'; key='triangle'; code='M8-SAMPLE-05'; skill='Sample Word / Short Answer Skill — replace this text'; }
+      else if(i<=50){ type='ALGEBRAIC'; key='2x+6'; code='M8-SAMPLE-06'; skill='Sample Algebraic Skill — replace this text'; }
       itemRows.push([i,type,key,'',code,skill,1,'']);
     }
     const wsItems=XLSX.utils.aoa_to_sheet(itemRows);
@@ -48,9 +49,9 @@
       ['Sheet','What to fill'],
       ['TEST INFO','Enter assessment title, subject, grade level, section, term, teacher, and MCQ choices (4 or 5).'],
       ['ITEMS','One row per test item. Do not skip Item No. values within the active test.'],
-      ['Question Type','Use only: MCQ, TRUE/FALSE, NUMERICAL, or ALGEBRAIC.'],
-      ['Correct Answer','Main answer key. Examples: B, TRUE, -12.5, 2x+6.'],
-      ['Accepted Answer(s)','Optional alternatives separated by | or ;. Example: 0.5 | 1/2. For ALGEBRAIC items, list every answer form you want SMART SCANNER to accept after teacher review.'],
+      ['Question Type','Use only: MCQ, TRUE/FALSE, NUMERICAL, WORD, or ALGEBRAIC.'],
+      ['Correct Answer','Main answer key. Examples: B, TRUE, -12.5, triangle, 2x+6.'],
+      ['Accepted Answer(s)','Optional alternatives separated by | or ;. Examples: 0.5 | 1/2 or triangle | Triangle. For WORD and ALGEBRAIC items, list every answer form you want SMART SCANNER to accept after teacher review.'],
       ['Competency Code','Optional code such as MELC/code used by your school or subject.'],
       ['Learning Competency / Skill','Write the exact skill/competency measured by the item. Items with the same competency will be grouped automatically in mastery analysis.'],
       ['Points','Default 1. You may assign more than 1 point to an item; scoring and analysis use the Points column.'],
