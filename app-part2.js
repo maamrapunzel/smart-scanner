@@ -8,7 +8,7 @@ function renderSummary(){
   $('sumItems').textContent=assessment.items.length;
   $('sumLearners').textContent=assessment.learners.length;
   $('sumCompetencies').textContent=new Set(assessment.items.map(i=>i.competencyCode||i.competency).filter(Boolean)).size;
-  $('sumPages').textContent=Math.ceil(assessment.items.length/ITEMS_PER_PAGE);
+  $('sumPages').textContent=buildSectionedLayoutPages().length;
   const counts={}; assessment.items.forEach(i=>counts[i.type]=(counts[i.type]||0)+1);
   $('typeBreakdown').innerHTML=Object.entries(counts).map(([k,v])=>`<span class="chip">${escapeHtml(k)}: ${v}</span>`).join('');
 }
@@ -78,9 +78,12 @@ function answerSheetLearners(mode){
 }
 function logicalAnswerPages(mode){
   if(!assessment) return [];
-  const pages=Math.ceil(assessment.items.length/ITEMS_PER_PAGE),out=[];
+  const layouts=buildSectionedLayoutPages(),out=[],totalPages=layouts.length;
   answerSheetLearners(mode).forEach(learner=>{
-    for(let p=1;p<=pages;p++) out.push({learner,pageNo:p,totalPages:pages,html:buildAnswerPage(learner,p,pages)});
+    layouts.forEach((layoutPage,i)=>{
+      const pageNo=i+1;
+      out.push({learner,pageNo,totalPages,html:buildAnswerPage(learner,pageNo,totalPages,layoutPage)});
+    });
   });
   return out;
 }
@@ -140,49 +143,65 @@ async function exportAnswerSheetPng(mode){
 function fileSlug(s){
   return String(s||'').trim().replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,50)||'ANSWER_SHEET';
 }
-function buildAnswerPage(learner,pageNo,totalPages){
+function buildAnswerPage(learner,pageNo,totalPages,layoutPage){
   const key=learnerKey(learner);
   const qrText=learner.generic?'':`SS2|${assessment.id}|${encodeURIComponent(key)}|${pageNo}`;
   const totalPoints=assessment.items.reduce((sum,it)=>sum+(Number(it.points)||0),0);
-  const items=assessment.items.slice((pageNo-1)*ITEMS_PER_PAGE,pageNo*ITEMS_PER_PAGE);
-  const rows=items.map((it,idx)=>buildAnswerRow(it,idx)).join('');
-  return `<section class="answer-page">
+  const sectionHtml=layoutPage.sections.map(buildSectionBlock).join('');
+  return `<section class="answer-page sectioned-sheet">
     <div class="marker m-tl"></div><div class="marker m-tr"></div><div class="marker m-bl"></div><div class="marker m-br"></div>
     <div class="sheet-head"><h3>SMART SCANNER ANSWER SHEET</h3><div class="meta">${escapeHtml(assessment.info['Assessment Title']||'Assessment')} • ${escapeHtml(assessment.info['Subject']||'')} • ${escapeHtml(assessment.info['Term']||'')}</div></div>
+    <div class="sheet-rule">PEN ONLY • NO ERASURES • SHADE COMPLETELY • DO NOT FOLD</div>
     <div class="sheet-student">
       <div class="sheet-line"><b>Name:</b>${escapeHtml(learner.name||'')}</div><div class="sheet-line score-line"><b>Score:</b><span class="score-space"></span><span class="score-total">/ ${formatNum(totalPoints)}</span></div>
       <div class="sheet-line"><b>Section:</b>${escapeHtml(learner.section||assessment.info['Section']||'')}</div><div class="sheet-line"><b>Learner No.:</b>${escapeHtml(learner.no||'')}</div>
     </div>
     ${qrText?`<div class="sheet-qr" data-qr="${escapeHtml(qrText)}"></div>`:''}
-    <div class="sheet-instructions">Shade one circle completely for selected-response items. For box-type items, write one character in each box. Keep all four black squares clean.</div>
     <div class="sheet-page-label">PAGE ${pageNo} OF ${totalPages}</div>
-    ${rows}
+    ${sectionHtml}
     <div class="sheet-sign">School: ${escapeHtml(assessment.info['School']||'')} &nbsp;&nbsp; Teacher: ${escapeHtml(assessment.info['Teacher']||'')}</div>
-    <div class="sheet-footer">SMART SCANNER • Scan • Check • Analyze • Record</div>
+    <div class="sheet-footer">Use black or blue pen. No erasures. Keep all four black squares clean.</div>
   </section>`;
+}
+function buildSectionBlock(sec){
+  const cont=sec.continuation?' (cont.)':'';
+  const head=`<div class="sheet-section-head" style="top:${sec.y}mm"><b>${sec.letter}. ${escapeHtml(sec.title)}${cont}</b><span>${escapeHtml(sec.instruction)}</span></div>`;
+  return head+sec.items.map(buildSectionedItem).join('');
 }
 function boxCountForItem(it){
   const answers=[it.key,...(it.accepted||[])].map(v=>String(v??'').replace(/\s+/g,''));
   const longest=Math.max(1,...answers.map(v=>v.length));
   return clamp(longest,1,16);
 }
-function buildCharacterBoxes(it){
+function characterBoxesHtml(it){
   const count=boxCountForItem(it);
   return `<span class="char-boxes">${Array.from({length:count},()=>'<span class="char-box"></span>').join('')}</span>`;
 }
-function buildAnswerRow(it,idx){
-  const y=ROW_START_MM+idx*ROW_GAP_MM;
-  let control='';
-  if(it.type==='MCQ'){
-    control=mcqLabels().map((lab,j)=>`<span class="sheet-bubble" style="left:${MCQ_X_MM[j]-2.75}mm">${lab}</span>`).join('');
-  }else if(it.type==='TRUE/FALSE'){
-    control=`<span class="sheet-bubble" style="left:${TF_X_MM[0]-2.75}mm">T</span><span class="sheet-bubble" style="left:${TF_X_MM[1]-2.75}mm">F</span>`;
-  }else if(['NUMERICAL-BOX','WORD-BOX','ALGEBRAIC-BOX','NUMERICAL','WORD','ALGEBRAIC'].includes(it.type)){
-    control=buildCharacterBoxes(it);
-  }else{
-    control='<span class="write-area"></span>';
+function buildSectionedItem(layout){
+  const it=layout.it,t=layout.type;
+  if(t==='MCQ'){
+    const bubbles=mcqLabels().map((lab,j)=>`<span class="sheet-bubble" style="left:${MCQ_X_MM[j]-2.4}mm">${lab}</span>`).join('');
+    return `<div class="sheet-row" style="top:${layout.y}mm"><span class="item-no">${it.no}.</span>${bubbles}</div>`;
   }
-  return `<div class="sheet-row" style="top:${y-3.7}mm"><span class="item-no">${it.no}.</span>${control}</div>`;
+  if(t==='TRUE/FALSE'){
+    return `<div class="sheet-row" style="top:${layout.y}mm"><span class="item-no">${it.no}.</span><span class="sheet-bubble" style="left:${TF_X_MM[0]-2.4}mm">T</span><span class="sheet-bubble" style="left:${TF_X_MM[1]-2.4}mm">F</span></div>`;
+  }
+  if(t==='NUMERICAL-BOX' && layout.numericSpec?.auto) return buildNumericBubbleItem(layout);
+  return `<div class="sheet-row box-row" style="top:${layout.y}mm"><span class="item-no">${it.no}.</span>${characterBoxesHtml(it)}</div>`;
+}
+function buildNumericBubbleItem(layout){
+  const it=layout.it,spec=layout.numericSpec,top=layout.y;
+  const labels=Array.from({length:10},(_,n)=>n);
+  const sign=`<span class="numeric-col-label" style="left:${NUMERIC_SIGN_X_MM-5}mm">−</span><span class="numeric-mini-bubble sign-bubble" style="left:${NUMERIC_SIGN_X_MM-1.6}mm;top:${NUMERIC_DIGIT_Y0_MM-1.6}mm">−</span>`;
+  const cols=Array.from({length:spec.digits},(_,col)=>{
+    const x=NUMERIC_DIGIT_X0_MM+col*NUMERIC_DIGIT_X_STEP_MM;
+    const bubbles=labels.map(n=>{
+      const y=NUMERIC_DIGIT_Y0_MM+n*NUMERIC_DIGIT_Y_STEP_MM;
+      return `<span class="numeric-mini-bubble" style="left:${x-1.6}mm;top:${y-1.6}mm">${n}</span>`;
+    }).join('');
+    return `<span class="numeric-col-label" style="left:${x-6}mm">Digit ${col+1}</span>${bubbles}`;
+  }).join('');
+  return `<div class="numeric-item" style="top:${top}mm;height:${layout.height}mm"><span class="numeric-item-no">${it.no}.</span>${sign}${cols}</div>`;
 }
 function generateQRCodes(){
   document.querySelectorAll('.sheet-qr[data-qr]').forEach(el=>{
