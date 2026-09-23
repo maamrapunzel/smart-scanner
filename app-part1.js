@@ -197,15 +197,27 @@ function sectionColumnCount(def,group){
   }
   return 1;
 }
+function sheetSectionRuns(){
+  if(!assessment) return [];
+  const defs=Object.fromEntries(sheetSectionDefinitions().map(d=>[d.type,d]));
+  const runs=[];
+  assessment.items.forEach(it=>{
+    const type=canonicalSheetType(it.type);
+    const def=defs[type]||{type,title:String(type||'ANSWERS'),instruction:''};
+    const last=runs[runs.length-1];
+    if(last && last.def.type===type) last.group.push(it);
+    else runs.push({def,group:[it]});
+  });
+  return runs;
+}
 function buildSectionedLayoutPages(){
   if(!assessment) return [];
   const pages=[];
   const newPage=()=>{ const p={sections:[],items:[]}; pages.push(p); return p; };
   let page=newPage(), y=SHEET_CONTENT_TOP_MM, visibleIndex=0;
 
-  for(const def of sheetSectionDefinitions()){
-    const group=assessment.items.filter(it=>canonicalSheetType(it.type)===def.type);
-    if(!group.length) continue;
+  for(const run of sheetSectionRuns()){
+    const def=run.def, group=run.group;
     const letter=String.fromCharCode(65+visibleIndex++);
     const columns=sectionColumnCount(def,group);
     let idx=0, continuation=false;
