@@ -1,0 +1,9 @@
+{
+  "name": "SMART SCANNER",
+  "short_name": "SMART SCANNER",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f7f7f8",
+  "theme_color": "#111111",
+  "description": "Mixed assessment scanner for teachers: MCQ, True/False, Numerical and Algebraic review with item analysis."
+}
