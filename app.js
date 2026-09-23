@@ -1,0 +1,88 @@
+(function(){
+  const parts=['app-part1.js','app-part2.js','app-part3.js','app-part4.js','app-part5.js','app-part6.js'];
+
+  function makeMasterTemplate(){
+    if(typeof XLSX==='undefined'){
+      alert('Excel library is not ready. Reload the app while online, then try again.');
+      return;
+    }
+    const wb=XLSX.utils.book_new();
+
+    const info=[
+      ['SMART SCANNER MASTER TEMPLATE',''],
+      ['Field','Value'],
+      ['Assessment Title','Mathematics Assessment'],
+      ['Subject','Mathematics 8'],
+      ['Grade Level','Grade 8'],
+      ['Section','Acacia'],
+      ['Term','Term 2'],
+      ['Teacher',''],
+      ['MCQ Choices',4],
+      ['Notes','Edit the yellow cells only. Keep sheet names and column headers unchanged.']
+    ];
+    const wsInfo=XLSX.utils.aoa_to_sheet(info);
+    wsInfo['!cols']=[{wch:24},{wch:72}];
+    XLSX.utils.book_append_sheet(wb,wsInfo,'TEST INFO');
+
+    const itemRows=[['Item No.','Question Type','Correct Answer','Accepted Answer(s)','Competency Code','Learning Competency / Skill','Points','Notes']];
+    for(let i=1;i<=200;i++){
+      let type='',key='',code='',skill='';
+      if(i<=20){ type='MCQ'; key=['A','B','C','D'][(i-1)%4]; code=i<=10?'M8-SAMPLE-01':'M8-SAMPLE-02'; skill=i<=10?'Sample Competency 1 — replace this text':'Sample Competency 2 — replace this text'; }
+      else if(i<=30){ type='TRUE/FALSE'; key=i%2?'TRUE':'FALSE'; code='M8-SAMPLE-03'; skill='Sample Competency 3 — replace this text'; }
+      else if(i<=40){ type='NUMERICAL'; key=String(i-25); code='M8-SAMPLE-04'; skill='Sample Numerical Skill — replace this text'; }
+      else if(i<=50){ type='ALGEBRAIC'; key='2x+6'; code='M8-SAMPLE-05'; skill='Sample Algebraic Skill — replace this text'; }
+      itemRows.push([i,type,key,'',code,skill,1,'']);
+    }
+    const wsItems=XLSX.utils.aoa_to_sheet(itemRows);
+    wsItems['!cols']=[{wch:10},{wch:18},{wch:18},{wch:25},{wch:20},{wch:50},{wch:10},{wch:28}];
+    XLSX.utils.book_append_sheet(wb,wsItems,'ITEMS');
+
+    const learnerRows=[['Learner No.','Learner ID / LRN','Learner Name','Section']];
+    for(let i=1;i<=199;i++) learnerRows.push([i,'','','']);
+    const wsLearners=XLSX.utils.aoa_to_sheet(learnerRows);
+    wsLearners['!cols']=[{wch:13},{wch:20},{wch:35},{wch:20}];
+    XLSX.utils.book_append_sheet(wb,wsLearners,'LEARNERS');
+
+    const guide=[
+      ['SMART SCANNER MASTER EXCEL — QUICK GUIDE',''],
+      ['Sheet','What to fill'],
+      ['TEST INFO','Enter assessment title, subject, grade level, section, term, teacher, and MCQ choices (4 or 5).'],
+      ['ITEMS','One row per test item. Do not skip Item No. values within the active test.'],
+      ['Question Type','Use only: MCQ, TRUE/FALSE, NUMERICAL, or ALGEBRAIC.'],
+      ['Correct Answer','Main answer key. Examples: B, TRUE, -12.5, 2x+6.'],
+      ['Accepted Answer(s)','Optional alternatives separated by | or ;. Example: 0.5 | 1/2. For ALGEBRAIC items, list every answer form you want SMART SCANNER to accept after teacher review.'],
+      ['Competency Code','Optional code such as MELC/code used by your school or subject.'],
+      ['Learning Competency / Skill','Write the exact skill/competency measured by the item. Items with the same competency will be grouped automatically in mastery analysis.'],
+      ['Points','Default 1. You may assign more than 1 point to an item; scoring and analysis use the Points column.'],
+      ['LEARNERS','Recommended. Add learner names/IDs so personalized answer sheets can include QR learner identification.'],
+      ['Important','Keep the sheet names and header names unchanged so SMART SCANNER can read the workbook correctly.']
+    ];
+    const wsGuide=XLSX.utils.aoa_to_sheet(guide);
+    wsGuide['!cols']=[{wch:26},{wch:115}];
+    XLSX.utils.book_append_sheet(wb,wsGuide,'GUIDE');
+
+    XLSX.writeFile(wb,'SMART_SCANNER_MASTER_TEMPLATE.xlsx');
+  }
+
+  const downloadLink=[...document.querySelectorAll('a')].find(a=>/Download Master Excel/i.test(a.textContent||''));
+  if(downloadLink){
+    downloadLink.href='#';
+    downloadLink.removeAttribute('download');
+    downloadLink.addEventListener('click',e=>{ e.preventDefault(); makeMasterTemplate(); });
+  }
+
+  (async()=>{
+    for(const src of parts){
+      await new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src=src;
+        s.onload=resolve;
+        s.onerror=()=>reject(new Error('Failed to load '+src));
+        document.body.appendChild(s);
+      });
+    }
+  })().catch(err=>{
+    console.error(err);
+    document.body.insertAdjacentHTML('afterbegin','<div style="padding:12px;background:#ffe4e7;color:#8d2331;font-family:Arial">SMART SCANNER failed to load. Reload while online.</div>');
+  });
+})();

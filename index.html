@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111111">
+  <title>SMART SCANNER</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+</head>
+<body>
+  <header class="topbar no-print">
+    <div class="brand-block">
+      <div class="brand-icon">SS</div>
+      <div>
+        <h1>SMART <span>SCANNER</span></h1>
+        <p>Scan • Check • Analyze • Record</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span id="storageBadge" class="pill">LOCAL DATA</span>
+      <span id="netBadge" class="pill good">ONLINE</span>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <aside class="sidebar no-print">
+      <button class="nav-btn active" data-screen="dashboard"><span>⌂</span> Dashboard</button>
+      <button class="nav-btn" data-screen="answersheet"><span>▤</span> Answer Sheet</button>
+      <button class="nav-btn" data-screen="scanner"><span>⌁</span> Scanner</button>
+      <button class="nav-btn" data-screen="results"><span>▦</span> Results</button>
+      <button class="nav-btn" data-screen="analysis"><span>▥</span> Analysis</button>
+      <div class="sidebar-note">
+        <b>SMART SCANNER V2</b>
+        <span>GitHub Pages Edition</span>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <section id="dashboard" class="screen active">
+        <div class="hero-card">
+          <div>
+            <span class="eyebrow">SMART SCANNER</span>
+            <h2>Mixed Assessment Scanner</h2>
+            <p>One test can contain Multiple Choice, True/False, Numerical, and Algebraic items.</p>
+          </div>
+          <div class="hero-badge">V2</div>
+        </div>
+
+        <div class="grid-2">
+          <article class="card">
+            <div class="card-title-row">
+              <div>
+                <h3>1. Master Excel</h3>
+                <p>Prepare test details, answer key, competencies, and learner list.</p>
+              </div>
+              <div class="step-chip">SETUP</div>
+            </div>
+            <div class="button-row">
+              <a class="btn" href="SMART_SCANNER_MASTER_TEMPLATE.xlsx" download>Download Master Excel</a>
+              <label class="btn secondary file-btn">Upload Master Excel
+                <input id="excelInput" type="file" accept=".xlsx,.xls" hidden>
+              </label>
+            </div>
+            <div id="uploadStatus" class="status neutral">No assessment loaded yet.</div>
+          </article>
+
+          <article class="card">
+            <div class="card-title-row">
+              <div>
+                <h3>Assessment Summary</h3>
+                <p id="assessmentSubtitle">Upload a Master Excel to begin.</p>
+              </div>
+              <div class="step-chip soft">LIVE</div>
+            </div>
+            <div id="summaryEmpty" class="empty-state">No active assessment.</div>
+            <div id="summaryBox" class="hide">
+              <div class="summary-title" id="summaryTitle"></div>
+              <div class="kpi-grid">
+                <div class="kpi"><b id="sumItems">0</b><span>Items</span></div>
+                <div class="kpi"><b id="sumLearners">0</b><span>Learners</span></div>
+                <div class="kpi"><b id="sumCompetencies">0</b><span>Competencies</span></div>
+                <div class="kpi"><b id="sumPages">0</b><span>Pages</span></div>
+              </div>
+              <div id="typeBreakdown" class="chips"></div>
+            </div>
+          </article>
+        </div>
+
+        <article class="card">
+          <div class="card-title-row">
+            <div>
+              <h3>Quick Actions</h3>
+              <p>Jump directly to the next step.</p>
+            </div>
+          </div>
+          <div class="quick-grid">
+            <button class="quick-card" data-go="answersheet"><b>Answer Sheet</b><span>Preview and print personalized sheets</span></button>
+            <button class="quick-card" data-go="scanner"><b>Scan Papers</b><span>Live camera or photo upload</span></button>
+            <button class="quick-card" data-go="results"><b>View Results</b><span>Scores and learner responses</span></button>
+            <button class="quick-card" data-go="analysis"><b>Item Analysis</b><span>MPS, mastery, competencies</span></button>
+          </div>
+        </article>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Data & Backup</h3>
+            <p>Your assessment and results are stored in this browser. Use backup before clearing browser data or moving devices.</p>
+            <div class="button-row">
+              <button id="backupBtn" class="secondary">Backup JSON</button>
+              <label class="btn secondary file-btn">Restore Backup
+                <input id="restoreInput" type="file" accept="application/json,.json" hidden>
+              </label>
+              <button id="resetAssessmentBtn" class="danger">Clear Active Data</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <h3>V2 Improvements</h3>
+            <div class="feature-list">
+              <span>✓ GitHub Pages / HTTPS</span>
+              <span>✓ Live camera is primary</span>
+              <span>✓ QR learner + page identification</span>
+              <span>✓ 4-corner page calibration</span>
+              <span>✓ MCQ and T/F auto-read</span>
+              <span>✓ Numerical and Algebraic review crops</span>
+              <span>✓ Item + competency analysis</span>
+              <span>✓ Excel results export</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="answersheet" class="screen">
+        <div class="page-head no-print">
+          <div>
+            <span class="eyebrow">ANSWER SHEET</span>
+            <h2>Printable Personalized Sheets</h2>
+            <p>Each learner page includes a QR identifier and four calibration markers.</p>
+          </div>
+        </div>
+
+        <article class="card no-print">
+          <div class="answer-toolbar">
+            <div class="field grow">
+              <label for="sheetLearnerSelect">Learner</label>
+              <select id="sheetLearnerSelect"></select>
+            </div>
+            <div class="button-row compact">
+              <button id="previewSelectedBtn">Preview Selected</button>
+              <button id="printSelectedBtn">Print Selected</button>
+              <button id="printAllBtn" class="secondary">Print All Learners</button>
+            </div>
+          </div>
+          <div class="hint">Print at <b>100% / Actual Size</b>. Do not crop the four black corner markers.</div>
+        </article>
+        <div id="sheetContainer"></div>
+      </section>
+
+      <section id="scanner" class="screen">
+        <div class="page-head no-print">
+          <div>
+            <span class="eyebrow">SCANNER</span>
+            <h2>Scan and Review</h2>
+            <p>QR attempts to select the learner and page automatically. Manual selection is always available.</p>
+          </div>
+        </div>
+
+        <div class="grid-2 scanner-grid">
+          <article class="card">
+            <div class="field-row">
+              <div class="field grow">
+                <label for="learnerSelect">Learner</label>
+                <select id="learnerSelect"></select>
+              </div>
+              <div class="field small-field">
+                <label for="pageSelect">Page</label>
+                <select id="pageSelect"></select>
+              </div>
+            </div>
+
+            <div class="camera-shell">
+              <video id="liveVideo" playsinline autoplay muted></video>
+              <img id="photoPreview" class="hide" alt="Captured answer sheet">
+              <div class="scan-frame"><span></span><span></span><span></span><span></span></div>
+              <div id="cameraPlaceholder" class="camera-placeholder">Start the camera or upload a clear full-page photo.</div>
+            </div>
+
+            <div class="button-row">
+              <button id="startCameraBtn">Start Camera</button>
+              <button id="captureBtn" class="good">Capture & Read</button>
+              <label class="btn secondary file-btn">Upload Photo
+                <input id="photoInput" type="file" accept="image/*" capture="environment" hidden>
+              </label>
+              <button id="stopCameraBtn" class="secondary">Stop</button>
+            </div>
+            <div id="scanStatus" class="status neutral">Ready.</div>
+            <div id="qrStatus" class="mini-status">QR: waiting</div>
+          </article>
+
+          <article class="card">
+            <div class="card-title-row">
+              <div>
+                <h3>Review Detected Answers</h3>
+                <p>Auto-read selected responses; type Numerical/Algebraic answers from the cropped image.</p>
+              </div>
+              <span id="reviewCount" class="count-badge">0</span>
+            </div>
+            <div id="reviewList" class="review-list"><div class="empty-state">No scanned page yet.</div></div>
+            <div class="button-row sticky-actions">
+              <button id="savePageBtn">Save Page Result</button>
+              <button id="clearReviewBtn" class="secondary">Clear Review</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="results" class="screen">
+        <div class="page-head no-print">
+          <div>
+            <span class="eyebrow">RESULTS</span>
+            <h2>Learner Scores</h2>
+            <p>Scores update from saved scanned pages.</p>
+          </div>
+          <div class="button-row">
+            <button id="exportExcelBtn">Export Excel</button>
+            <button id="exportCsvBtn" class="secondary">Export CSV</button>
+            <button id="clearResultsBtn" class="danger">Clear Results</button>
+          </div>
+        </div>
+
+        <article class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>#</th><th>Learner</th><th>LRN / ID</th><th>Pages</th><th>Score</th><th>Total</th><th>%</th><th>Pending Review</th></tr>
+              </thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="analysis" class="screen">
+        <div class="page-head no-print">
+          <div>
+            <span class="eyebrow">ANALYSIS</span>
+            <h2>Class & Item Analysis</h2>
+            <p>Use the saved responses to see class performance and mastery.</p>
+          </div>
+          <div class="field threshold-field">
+            <label for="masteryThreshold">Mastery Threshold</label>
+            <div class="inline-input"><input id="masteryThreshold" type="number" min="1" max="100" value="75"><span>%</span></div>
+          </div>
+        </div>
+
+        <div class="analysis-kpis">
+          <div class="stat-card"><span>Checked Learners</span><b id="aLearners">0</b></div>
+          <div class="stat-card"><span>Mean Score</span><b id="aMean">0</b></div>
+          <div class="stat-card"><span>MPS</span><b id="aMps">0%</b></div>
+          <div class="stat-card"><span>Highest</span><b id="aHigh">0</b></div>
+          <div class="stat-card"><span>Lowest</span><b id="aLow">0</b></div>
+        </div>
+
+        <div class="grid-2">
+          <article class="card">
+            <div class="card-title-row"><div><h3>Competency Mastery</h3><p>Grouped using Competency Code / Learning Competency from the Master Excel.</p></div></div>
+            <div id="competencyCards" class="competency-list"><div class="empty-state">No results to analyze yet.</div></div>
+          </article>
+          <article class="card">
+            <h3>Most / Least Mastered</h3>
+            <div class="mastery-pair">
+              <div class="mastery-box good-box"><span>Most Mastered</span><b id="mostMastered">—</b><small id="mostMasteredPct">—</small></div>
+              <div class="mastery-box warn-box"><span>Needs Reinforcement</span><b id="leastMastered">—</b><small id="leastMasteredPct">—</small></div>
+            </div>
+          </article>
+        </div>
+
+        <article class="card">
+          <div class="card-title-row"><div><h3>Item Analysis</h3><p>Correct count, incorrect/blank, percent correct, and competency.</p></div></div>
+          <div class="table-wrap tall">
+            <table>
+              <thead><tr><th>Item</th><th>Type</th><th>Key</th><th>Correct</th><th>Incorrect / Blank</th><th>% Correct</th><th>Competency</th><th>Status</th></tr></thead>
+              <tbody id="itemAnalysisBody"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <canvas id="workCanvas" class="hide"></canvas>
+  <script src="app.js"></script>
+</body>
+</html>
