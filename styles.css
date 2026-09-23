@@ -111,6 +111,49 @@ button,.btn,select,input{font:inherit}.hide{display:none!important}.no-select{us
 .numeric-col-label{position:absolute;top:1.1mm;width:12mm;text-align:center;font-size:5.8pt;font-weight:700;color:#333}
 .numeric-mini-bubble{position:absolute;width:3.2mm;height:3.2mm;border:.3mm solid #111;border-radius:50%;display:grid;place-items:center;font-size:4.8pt;line-height:1;background:#fff}
 .sign-bubble{font-size:5.3pt;font-weight:800}
+
+/* ===== APPROVED MODULAR ANSWER SHEET V3 ===== */
+.block-answer-sheet .sheet-head{top:6.8mm;left:18mm;right:18mm}
+.block-answer-sheet .sheet-head h3{font-size:14.5pt;letter-spacing:.2pt}
+.block-answer-sheet .sheet-head .meta{font-size:8.1pt;margin-top:1.2mm}
+.block-answer-sheet .sheet-rule{top:20.5mm;left:17mm;right:55mm;font-size:6.35pt;letter-spacing:.18mm}
+.block-answer-sheet .sheet-student{top:27mm;left:17mm;right:55mm;gap:2.2mm 9mm;font-size:8.5pt}
+.block-answer-sheet .sheet-line{min-height:5.2mm}
+.block-answer-sheet .sheet-qr{right:17mm;top:17.5mm;width:29mm;height:29mm}
+.block-answer-sheet .sheet-qr canvas,.block-answer-sheet .sheet-qr img{width:27mm!important;height:27mm!important}
+.block-answer-sheet .sheet-page-label{right:18mm;top:47.5mm;font-size:7.5pt}
+
+.answer-block-outline{position:absolute;border:.28mm solid #5a5559;border-radius:1mm;pointer-events:none}
+.answer-block-head{position:absolute;height:7.2mm;background:linear-gradient(90deg,#fff0f6,#fff7fa);border:.28mm solid #5a5559;border-radius:1mm 1mm 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 2.5mm;overflow:hidden}
+.answer-block-head b{font-size:8.3pt;white-space:nowrap}
+.answer-block-head span{font-size:6.15pt;font-weight:600;color:#4d474b;text-align:right;line-height:1.05;margin-left:2mm}
+
+.block-sheet-row,.block-written-row,.numeric-horizontal-item{position:absolute;border-bottom:.16mm solid #ebe7e9}
+.block-sheet-row{height:7mm}
+.block-written-row{height:9.2mm}
+.block-item-no,.numeric-h-item-no{position:absolute;left:3mm;top:1.35mm;font-weight:800;font-size:8.4pt}
+.block-written-row .block-item-no{top:2.1mm}
+.block-bubble{position:absolute;top:1.12mm;width:4.7mm;height:4.7mm;border:.34mm solid #111;border-radius:50%;display:grid;place-items:center;background:#fff;font-size:6pt;line-height:1}
+.block-char-boxes{position:absolute;display:flex;align-items:center;height:6.2mm}
+.block-char-box{display:block;border:.32mm solid #111;border-radius:.35mm;background:#fff;flex:0 0 auto}
+
+.numeric-horizontal-item{background:#fff}
+.numeric-h-item-no{top:2mm}
+.numeric-sign-bubble,.numeric-h-bubble{position:absolute;width:3.5mm;height:3.5mm;border:.3mm solid #111;border-radius:50%;display:grid;place-items:center;background:#fff;font-size:4.8pt;line-height:1}
+.numeric-sign-bubble{font-weight:900;font-size:5.5pt}
+.numeric-row-label{position:absolute;width:7mm;text-align:center;font-size:5.2pt;font-weight:800;color:#343034}
+.numeric-h-bubble{font-size:4.6pt}
+
+.sheet-marking-guide{position:absolute;left:17mm;right:17mm;bottom:13.2mm;height:10.8mm;border:.28mm solid #5b5659;border-radius:1mm;display:flex;align-items:center;gap:2mm;padding:1.4mm 3mm;font-size:6.25pt;background:#fff}
+.sheet-marking-guide>b{font-size:7.4pt;margin-right:1mm}
+.sheet-marking-guide .mark-good{font-size:14pt;line-height:1}
+.sheet-marking-guide .mark-bad{font-size:10pt;line-height:1;border-left:.25mm solid #bbb;padding-left:3mm}
+.sheet-marking-guide .mark-note{margin-left:auto;max-width:61mm;line-height:1.2;border-left:.25mm solid #bbb;padding-left:3mm;color:#302d2f}
+@media screen and (max-width:900px){
+  .answer-block-head span{font-size:5.8pt}
+}
+/* ===== END MODULAR ANSWER SHEET V3 ===== */
+
 @media print{
   @page{size:A4 portrait;margin:0}.no-print,.topbar,.sidebar{display:none!important}html,body{background:#fff;margin:0!important;padding:0!important}.app-layout{display:block}.main-content{padding:0}.screen{display:none!important}#answersheet{display:block!important}#sheetContainer{padding:0;overflow:visible}.print-sheet{box-shadow:none;margin:0;page-break-after:always;break-after:page}.print-sheet:last-child{page-break-after:auto;break-after:auto}.sheet-slot{border:0}.answer-page{box-shadow:none;margin:0}.card,.page-head{display:none!important}
 }
