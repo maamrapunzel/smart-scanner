@@ -11,16 +11,16 @@ function normalizeExprText(s){
 function scoreAnswer(it,ans){
   const keys=[it.key,...it.accepted].filter(x=>String(x).trim()!==''); if(String(ans??'').trim()==='') return 0;
   if(it.type==='MCQ'||it.type==='TRUE/FALSE') return keys.some(k=>normalizeText(k)===normalizeText(ans))?it.points:0;
-  if(it.type==='NUMERICAL'){
+  if(['NUMERICAL','NUMERICAL-BOX'].includes(it.type)){
     const a=normalizeNumeric(ans); return keys.some(k=>{const b=normalizeNumeric(k);return Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<1e-9})?it.points:0;
   }
-  if(it.type==='ALGEBRAIC') return keys.some(k=>normalizeExprText(k)===normalizeExprText(ans))?it.points:0;
-  if(it.type==='WORD') return keys.some(k=>normalizeText(k)===normalizeText(ans))?it.points:0;
+  if(['ALGEBRAIC','ALGEBRAIC-BOX'].includes(it.type)) return keys.some(k=>normalizeExprText(k)===normalizeExprText(ans))?it.points:0;
+  if(['WORD','WORD-BOX'].includes(it.type)) return keys.some(k=>normalizeText(k)===normalizeText(ans))?it.points:0;
   return 0;
 }
 function calculateLearnerResult(rec){
   const merged={}; Object.values(rec.pages||{}).forEach(p=>Object.assign(merged,p.answers||{})); let score=0,total=0,pending=0;
-  assessment.items.forEach(it=>{ total+=it.points; score+=scoreAnswer(it,merged[it.no]); if(['NUMERICAL','ALGEBRAIC','WORD'].includes(it.type)&&!String(merged[it.no]||'').trim())pending++; });
+  assessment.items.forEach(it=>{ total+=it.points; score+=scoreAnswer(it,merged[it.no]); if(['NUMERICAL','ALGEBRAIC','WORD','NUMERICAL-BOX','ALGEBRAIC-BOX','WORD-BOX'].includes(it.type)&&!String(merged[it.no]||'').trim())pending++; });
   return {score,total,pct:total?score/total*100:0,merged,pending};
 }
 
