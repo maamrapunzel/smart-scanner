@@ -10,8 +10,8 @@ const PAGE_H_MM = 297;
 const MARKER_MM = { tl:[10,10], tr:[200,10], br:[200,287], bl:[10,287] };
 const ROW_START_MM = 67;
 const ROW_GAP_MM = 8.2;
-const MCQ_X_MM = [105,125,145,165,185];
-const TF_X_MM = [145,180];
+const MCQ_X_MM = [55,80,105,130,155];
+const TF_X_MM = [85,125];
 
 let assessment = null;
 let pendingReview = null;
