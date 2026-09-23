@@ -85,14 +85,15 @@ function analyzeImage(img,canvas,pageNo){
   const page=answerLayoutPage(pageNo);
   const answers={},crops={},metrics={};
   page.items.forEach(layout=>{
-    const it=layout.it,t=layout.type;
+    const it=layout.it,t=layout.type,x=layout.xOffset||0;
     if(t==='MCQ'){
       const y=layout.y+BASIC_ROW_H_MM/2;
-      const r=detectBubbles(img,H,MCQ_X_MM.slice(0,mcqLabels().length),y,mcqLabels());
+      const xs=MCQ_X_MM.slice(0,mcqLabels().length).map(v=>v+x);
+      const r=detectBubbles(img,H,xs,y,mcqLabels());
       answers[it.no]=r.value; metrics[it.no]=r;
     }else if(t==='TRUE/FALSE'){
       const y=layout.y+BASIC_ROW_H_MM/2;
-      const r=detectBubbles(img,H,TF_X_MM,y,['TRUE','FALSE']);
+      const r=detectBubbles(img,H,TF_X_MM.map(v=>v+x),y,['TRUE','FALSE']);
       answers[it.no]=r.value; metrics[it.no]=r;
     }else if(t==='NUMERICAL-BOX' && layout.numericSpec?.auto){
       const r=detectNumericBubbleAnswer(img,H,layout);
@@ -100,7 +101,9 @@ function analyzeImage(img,canvas,pageNo){
     }else{
       answers[it.no]='';
       metrics[it.no]={value:'',confidence:0,manual:true};
-      crops[it.no]=makeCropDataUrl(canvas,H,32,layout.y,175,Math.min(layout.y+layout.height,274));
+      const cropX1=32+x;
+      const cropX2=layout.columns===2?Math.min(102+x,193):175;
+      crops[it.no]=makeCropDataUrl(canvas,H,cropX1,layout.y,cropX2,Math.min(layout.y+layout.height,274));
     }
   });
   const markerScore=(markers.tl.score+markers.tr.score+markers.br.score+markers.bl.score)/4;
