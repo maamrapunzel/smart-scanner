@@ -40,7 +40,7 @@ function refreshScannerControls(){
   if(!assessment){ ls.innerHTML='<option>Upload assessment first</option>'; ps.innerHTML='<option>1</option>'; return; }
   const learners=assessment.learners.length?assessment.learners:[{no:'',id:'',name:'Manual / Unlisted Learner',section:assessment.info['Section']||''}];
   const old=ls.value; ls.innerHTML=learners.map((l,i)=>`<option value="${i}">${escapeHtml(l.no||i+1)} — ${escapeHtml(l.name)}</option>`).join(''); if([...ls.options].some(o=>o.value===old))ls.value=old;
-  const pages=Math.ceil(assessment.items.length/ITEMS_PER_PAGE); const oldp=ps.value; ps.innerHTML=Array.from({length:pages},(_,i)=>`<option value="${i+1}">Page ${i+1}</option>`).join(''); if([...ps.options].some(o=>o.value===oldp))ps.value=oldp;
+  const pages=buildSectionedLayoutPages().length; const oldp=ps.value; ps.innerHTML=Array.from({length:pages},(_,i)=>`<option value="${i+1}">Page ${i+1}</option>`).join(''); if([...ps.options].some(o=>o.value===oldp))ps.value=oldp;
 }
 function sourceToImageData(source){
   const c=$('workCanvas'),ctx=c.getContext('2d',{willReadFrequently:true});
@@ -82,16 +82,25 @@ function applyQrSelection(qr){
 function analyzeImage(img,canvas,pageNo){
   const markers=findFourMarkers(img);
   const H=homographyFromPageMM([markers.tl,markers.tr,markers.br,markers.bl]);
-  const pageItems=assessment.items.slice((pageNo-1)*ITEMS_PER_PAGE,pageNo*ITEMS_PER_PAGE);
+  const page=answerLayoutPage(pageNo);
   const answers={},crops={},metrics={};
-  pageItems.forEach((it,idx)=>{
-    const y=ROW_START_MM+idx*ROW_GAP_MM;
-    if(it.type==='MCQ'){
-      const r=detectBubbles(img,H,MCQ_X_MM.slice(0,mcqLabels().length),y,mcqLabels()); answers[it.no]=r.value; metrics[it.no]=r;
-    }else if(it.type==='TRUE/FALSE'){
-      const r=detectBubbles(img,H,TF_X_MM,y,['TRUE','FALSE']); answers[it.no]=r.value; metrics[it.no]=r;
+  page.items.forEach(layout=>{
+    const it=layout.it,t=layout.type;
+    if(t==='MCQ'){
+      const y=layout.y+BASIC_ROW_H_MM/2;
+      const r=detectBubbles(img,H,MCQ_X_MM.slice(0,mcqLabels().length),y,mcqLabels());
+      answers[it.no]=r.value; metrics[it.no]=r;
+    }else if(t==='TRUE/FALSE'){
+      const y=layout.y+BASIC_ROW_H_MM/2;
+      const r=detectBubbles(img,H,TF_X_MM,y,['TRUE','FALSE']);
+      answers[it.no]=r.value; metrics[it.no]=r;
+    }else if(t==='NUMERICAL-BOX' && layout.numericSpec?.auto){
+      const r=detectNumericBubbleAnswer(img,H,layout);
+      answers[it.no]=r.value; metrics[it.no]=r;
     }else{
-      answers[it.no]=''; metrics[it.no]={value:'',confidence:0,manual:true}; crops[it.no]=makeCropDataUrl(canvas,H,35,y-3.5,170,y+3.5);
+      answers[it.no]='';
+      metrics[it.no]={value:'',confidence:0,manual:true};
+      crops[it.no]=makeCropDataUrl(canvas,H,32,layout.y,175,Math.min(layout.y+layout.height,274));
     }
   });
   const markerScore=(markers.tl.score+markers.tr.score+markers.br.score+markers.bl.score)/4;
