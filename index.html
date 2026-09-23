@@ -10,6 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
   <header class="topbar no-print">
@@ -149,13 +150,23 @@
               <label for="sheetLearnerSelect">Learner</label>
               <select id="sheetLearnerSelect"></select>
             </div>
+            <div class="field layout-field">
+              <label for="sheetLayoutSelect">Layout</label>
+              <select id="sheetLayoutSelect">
+                <option value="full">Full A4</option>
+                <option value="2up">2-up / A4 Landscape</option>
+                <option value="4up">4-up / A4 Portrait</option>
+              </select>
+            </div>
             <div class="button-row compact">
               <button id="previewSelectedBtn">Preview Selected</button>
               <button id="printSelectedBtn">Print Selected</button>
               <button id="printAllBtn" class="secondary">Print All Learners</button>
+              <button id="exportSelectedPngBtn" class="secondary">Export Selected PNG</button>
+              <button id="exportAllPngBtn" class="secondary">Export All PNG</button>
             </div>
           </div>
-          <div class="hint">Print at <b>100% / Actual Size</b>. Do not crop the four black corner markers.</div>
+          <div id="sheetLayoutHint" class="hint">Full A4 gives the best scan accuracy. For 2-up or 4-up, cut the mini sheets apart before scanning and keep all four black corner markers visible.</div>
         </article>
         <div id="sheetContainer"></div>
       </section>
@@ -205,7 +216,7 @@
             <div class="card-title-row">
               <div>
                 <h3>Review Detected Answers</h3>
-                <p>Auto-read selected responses; type Numerical/Algebraic answers from the cropped image.</p>
+                <p>Auto-read selected responses; type Numerical, Algebraic, or WORD answers from the cropped image.</p>
               </div>
               <span id="reviewCount" class="count-badge">0</span>
             </div>
