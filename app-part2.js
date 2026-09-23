@@ -195,14 +195,14 @@ function characterBoxesHtml(it,layout){
   const available=62;
   const gap=.55;
   const size=clamp((available-gap*(count-1))/count,3.15,5.25);
-  return `<span class="block-char-boxes" style="left:${layout.x+18}mm;top:${layout.y+.9}mm;gap:${gap}mm">${Array.from({length:count},()=>`<span class="block-char-box" style="width:${size}mm;height:${size}mm"></span>`).join('')}</span>`;
+  return `<span class="block-char-boxes" style="left:18mm;top:.9mm;gap:${gap}mm">${Array.from({length:count},()=>`<span class="block-char-box" style="width:${size}mm;height:${size}mm"></span>`).join('')}</span>`;
 }
 function buildSectionedItem(layout){
   const it=layout.it;
   if(layout.kind==='MCQ'){
     const labels=mcqLabels();
     const bubbles=labels.map((lab,j)=>{
-      const cx=layout.x+BLOCK_MCQ_BUBBLE_X_OFF[j];
+      const cx=BLOCK_MCQ_BUBBLE_X_OFF[j];
       return `<span class="block-bubble" style="left:${cx-2.35}mm">${lab}</span>`;
     }).join('');
     return `<div class="block-sheet-row" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm">
@@ -211,8 +211,8 @@ function buildSectionedItem(layout){
   }
   if(layout.kind==='TF'){
     const bubbles=['T','F'].map((lab,j)=>{
-      const cx=layout.x+BLOCK_TF_BUBBLE_X_OFF[j];
-      return `<span class="block-bubble" style="left:${cx-layout.x-2.35}mm">${lab}</span>`;
+      const cx=BLOCK_TF_BUBBLE_X_OFF[j];
+      return `<span class="block-bubble" style="left:${cx-2.35}mm">${lab}</span>`;
     }).join('');
     return `<div class="block-sheet-row" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm">
       <span class="block-item-no">${it.no}.</span>${bubbles}
@@ -225,14 +225,14 @@ function buildSectionedItem(layout){
 }
 function buildNumericBubbleItem(layout){
   const it=layout.it,spec=layout.numericSpec;
-  const signX=layout.x+NUMERIC_SIGN_X_OFF_MM;
-  const signY=layout.y+NUMERIC_ROW_TOP_MM;
+  const signX=NUMERIC_SIGN_X_OFF_MM;
+  const signY=NUMERIC_ROW_TOP_MM;
   const sign=`<span class="numeric-sign-bubble" style="left:${signX-1.75}mm;top:${signY-1.75}mm">−</span>`;
   const rows=Array.from({length:spec.digits},(_,digitIndex)=>{
-    const y=layout.y+NUMERIC_ROW_TOP_MM+digitIndex*NUMERIC_ROW_GAP_MM;
-    const label=`<span class="numeric-row-label" style="left:${layout.x+NUMERIC_DIGIT_LABEL_X_OFF_MM}mm;top:${y-1.7}mm">D${digitIndex+1}</span>`;
+    const y=NUMERIC_ROW_TOP_MM+digitIndex*NUMERIC_ROW_GAP_MM;
+    const label=`<span class="numeric-row-label" style="left:${NUMERIC_DIGIT_LABEL_X_OFF_MM}mm;top:${y-1.7}mm">D${digitIndex+1}</span>`;
     const bubbles=Array.from({length:10},(_,n)=>{
-      const x=layout.x+NUMERIC_DIGIT_X0_OFF_MM+n*NUMERIC_DIGIT_X_STEP_MM;
+      const x=NUMERIC_DIGIT_X0_OFF_MM+n*NUMERIC_DIGIT_X_STEP_MM;
       return `<span class="numeric-h-bubble" style="left:${x-1.65}mm;top:${y-1.65}mm">${n}</span>`;
     }).join('');
     return label+bubbles;
