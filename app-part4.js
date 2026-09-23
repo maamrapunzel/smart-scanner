@@ -83,14 +83,14 @@ function detectNumericDigit(img,H,x,topY){
   return {value:(top.avg>39&&gap>5)?String(top.digit):'',confidence,top:top.avg,gap};
 }
 function detectNumericBubbleAnswer(img,H,layout){
-  const spec=layout.numericSpec||{digits:1};
+  const spec=layout.numericSpec||{digits:1},xOffset=layout.xOffset||0;
   const digits=[],conf=[];
   for(let col=0;col<spec.digits;col++){
-    const x=NUMERIC_DIGIT_X0_MM+col*NUMERIC_DIGIT_X_STEP_MM;
+    const x=NUMERIC_DIGIT_X0_MM+xOffset+col*NUMERIC_DIGIT_X_STEP_MM;
     const r=detectNumericDigit(img,H,x,layout.y);
     digits.push(r.value); conf.push(r.confidence);
   }
-  const sign=miniBubbleDarkness(img,H,NUMERIC_SIGN_X_MM,layout.y+NUMERIC_DIGIT_Y0_MM);
+  const sign=miniBubbleDarkness(img,H,NUMERIC_SIGN_X_MM+xOffset,layout.y+NUMERIC_DIGIT_Y0_MM);
   const negative=sign.avg>78;
   const complete=digits.every(Boolean);
   const value=complete?(negative?'-':'')+digits.join(''):'';
