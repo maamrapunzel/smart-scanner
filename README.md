@@ -3,7 +3,7 @@
 A static HTML/CSS/JavaScript assessment scanner designed for GitHub Pages.
 
 ## Main features
-- Master Excel import
+- Master Excel download + import (the template is generated directly in the browser)
 - Mixed item types: MCQ, TRUE/FALSE, NUMERICAL, ALGEBRAIC
 - Personalized A4 answer sheets
 - QR learner + page identification
