@@ -10,8 +10,8 @@ const PAGE_H_MM = 297;
 const MARKER_MM = { tl:[10,10], tr:[200,10], br:[200,287], bl:[10,287] };
 const ROW_START_MM = 67;
 const ROW_GAP_MM = 8.2;
-const MCQ_X_MM = [42,55,68,81,94];
-const TF_X_MM = [55,75];
+const MCQ_X_MM = [40,50,60,70,80];
+const TF_X_MM = [50,66];
 
 let assessment = null;
 let pendingReview = null;
@@ -132,9 +132,9 @@ function normalizeType(v){
   const s=String(v||'').trim().toUpperCase().replace(/\s+/g,' ');
   if(['MCQ','MULTIPLE CHOICE','MULTIPLE-CHOICE'].includes(s)) return 'MCQ';
   if(['TRUE/FALSE','TRUE OR FALSE','T/F','TF'].includes(s)) return 'TRUE/FALSE';
-  if(['NUMERICAL','NUMERIC','NUMBER'].includes(s)) return 'NUMERICAL';
-  if(['ALGEBRAIC','ALGEBRA','EXPRESSION','ALGEBRAIC EXPRESSION'].includes(s)) return 'ALGEBRAIC';
-  if(['WORD','SHORT ANSWER','TEXT','WORD ANSWER'].includes(s)) return 'WORD';
+  if(['NUMERICAL-BOX','NUMERIC-BOX','NUMBER-BOX','NUMERICAL','NUMERIC','NUMBER'].includes(s)) return 'NUMERICAL-BOX';
+  if(['ALGEBRAIC-BOX','ALGEBRA-BOX','EXPRESSION-BOX','ALGEBRAIC','ALGEBRA','EXPRESSION','ALGEBRAIC EXPRESSION'].includes(s)) return 'ALGEBRAIC-BOX';
+  if(['WORD-BOX','SHORT-ANSWER-BOX','TEXT-BOX','WORD','SHORT ANSWER','TEXT','WORD ANSWER'].includes(s)) return 'WORD-BOX';
   return '';
 }
 function validateAssessment(a){
