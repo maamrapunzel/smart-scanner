@@ -210,14 +210,16 @@ function buildSectionedItem(layout){
   const it=layout.it;
   if(layout.kind==='MCQ'){
     const labels=mcqLabels(),xs=mcqBubbleXOffsets(layout.width);
-    const bubbles=labels.map((lab,j)=>`<span class="block-bubble" style="left:${xs[j]-2.2}mm">${lab}</span>`).join('');
+    const bubbleTop=Math.max(.2,(layout.height-4.8)/2);
+    const bubbles=labels.map((lab,j)=>`<span class="block-bubble" style="left:${xs[j]-2.4}mm;top:${bubbleTop}mm">${lab}</span>`).join('');
     return `<div class="block-sheet-row" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm;height:${layout.height}mm">
       <span class="block-item-no">${it.no}.</span>${bubbles}
     </div>`;
   }
   if(layout.kind==='TF'){
     const xs=tfBubbleXOffsets(layout.width);
-    const bubbles=['T','F'].map((lab,j)=>`<span class="block-bubble" style="left:${xs[j]-2.2}mm">${lab}</span>`).join('');
+    const bubbleTop=Math.max(.2,(layout.height-4.8)/2);
+    const bubbles=['T','F'].map((lab,j)=>`<span class="block-bubble" style="left:${xs[j]-2.4}mm;top:${bubbleTop}mm">${lab}</span>`).join('');
     return `<div class="block-sheet-row" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm;height:${layout.height}mm">
       <span class="block-item-no">${it.no}.</span>${bubbles}
     </div>`;
