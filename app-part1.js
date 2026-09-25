@@ -156,12 +156,13 @@ function validateAssessment(a){
 function mcqLabels(){ return Number(assessment?.info?.['MCQ Choices']||4)===5?['A','B','C','D','E']:['A','B','C','D']; }
 
 const SHEET_CONTENT_TOP_MM = 31;
-const SHEET_CONTENT_BOTTOM_MM = 195.5;
+const SHEET_CONTENT_BOTTOM_MM = 194;
 const SHEET_CONTENT_X_MM = 8.5;
 const SHEET_CONTENT_W_MM = 131;
-const SHEET_BLOCK_GAP_MM = 2;
-const SHEET_PAIR_GAP_MM = 3;
 const SHEET_BLOCK_HEAD_H_MM = 6.2;
+
+const NUMERIC_ROW_TOP_MM = 2.5;
+const NUMERIC_ROW_GAP_MM = 4.3;
 
 const REGISTRATION_MARKS_MM = [
   [4.5,30],[143.5,30],
@@ -173,6 +174,13 @@ const REGISTRATION_MARKS_MM = [
   [4.5,162],[143.5,162],
   [4.5,184],[143.5,184]
 ];
+
+const FIXED_A5_ZONES = {
+  MCQ:{key:'MCQ',letter:'A',title:'MULTIPLE CHOICE',instruction:'Shade one circle only.',x:8.5,y:31,width:75,bodyHeight:52,columns:2,capacity:20,rowHeight:5.2},
+  TF:{key:'TF',letter:'B',title:'TRUE OR FALSE',instruction:'Shade T or F only.',x:86.5,y:31,width:53,bodyHeight:52,columns:2,capacity:10,rowHeight:10.4},
+  NUMERIC:{key:'NUMERIC',letter:'C',title:'NUMERIC ANSWERS',instruction:'Shade one digit in each row; use minus only when needed.',x:8.5,y:91.2,width:131,bodyHeight:39.2,columns:1,capacity:6,rowHeight:5},
+  WRITTEN:{key:'WRITTEN',letter:'D',title:'ALGEBRAIC / WORD ANSWERS',instruction:'Write one character or symbol per box.',x:8.5,y:138.8,width:131,bodyHeight:49,columns:2,capacity:14,rowHeight:7}
+};
 
 function canonicalSheetType(type){
   if(type==='MCQ') return 'MCQ';
@@ -194,14 +202,14 @@ function boxCountForSheetItem(it){
 }
 function mcqBubbleXOffsets(width){
   const count=mcqLabels().length;
-  const start=12.3,end=Math.max(start+1,width-4.2);
+  const start=12.5,end=Math.max(start+1,width-4.1);
   const step=count>1?(end-start)/(count-1):0;
   return Array.from({length:count},(_,i)=>start+i*step);
 }
 function tfBubbleXOffsets(width){
-  const a=Math.min(width-13,13.5);
-  const b=Math.min(width-4.5,22);
-  return [a,Math.max(a+7.8,b)];
+  const a=Math.min(width-13,13.2);
+  const b=Math.min(width-4.2,22.2);
+  return [a,Math.max(a+8,b)];
 }
 function numericSignXOffset(){ return 9.5; }
 function numericDigitBubbleXOffsets(width){
@@ -209,140 +217,131 @@ function numericDigitBubbleXOffsets(width){
   const step=(end-start)/9;
   return Array.from({length:10},(_,i)=>start+i*step);
 }
-function sheetBlockGroups(){
-  if(!assessment) return [];
-  const buckets=new Map();
-  const meta={
-    MCQ:{key:'MCQ',title:'MULTIPLE CHOICE',instruction:'Shade one circle only.'},
-    TF:{key:'TF',title:'TRUE OR FALSE',instruction:'Shade T or F only.'},
-    NUMERIC:{key:'NUMERIC',title:'NUMERIC ANSWERS',instruction:'Shade one digit in each row; use minus only when needed.'},
-    WRITTEN:{key:'WRITTEN',title:'ALGEBRAIC / WORD ANSWERS',instruction:'Write one character or symbol per box.'}
-  };
-  assessment.items.forEach((it,index)=>{
+function fixedNumericItemHeight(it){
+  const spec=numericBubbleSpec(it);
+  if(!spec.auto) return 7;
+  return 5+(spec.digits-1)*NUMERIC_ROW_GAP_MM;
+}
+function fixedSheetBuckets(){
+  const buckets={MCQ:[],TF:[],NUMERIC:[],WRITTEN:[]};
+  if(!assessment) return buckets;
+  assessment.items.forEach(it=>{
     const t=canonicalSheetType(it.type);
-    const key=t==='MCQ'?'MCQ':t==='TRUE/FALSE'?'TF':t==='NUMERICAL-BOX'?'NUMERIC':'WRITTEN';
-    if(!buckets.has(key)) buckets.set(key,{...meta[key],items:[],firstIndex:index});
-    buckets.get(key).items.push(it);
+    if(t==='MCQ') buckets.MCQ.push(it);
+    else if(t==='TRUE/FALSE') buckets.TF.push(it);
+    else if(t==='NUMERICAL-BOX') buckets.NUMERIC.push(it);
+    else buckets.WRITTEN.push(it);
   });
-  return [...buckets.values()]
-    .sort((a,b)=>a.firstIndex-b.firstIndex)
-    .map((g,i)=>({...g,letter:String.fromCharCode(65+i)}));
+  return buckets;
 }
-function groupLongestAnswer(group){
-  return Math.max(1,...group.items.map(boxCountForSheetItem));
+function canUseFixedA5Template(buckets){
+  if((assessment?.items?.length||0)>50) return false;
+  if(buckets.MCQ.length>FIXED_A5_ZONES.MCQ.capacity) return false;
+  if(buckets.TF.length>FIXED_A5_ZONES.TF.capacity) return false;
+  if(buckets.WRITTEN.length>FIXED_A5_ZONES.WRITTEN.capacity) return false;
+  if(buckets.NUMERIC.length>FIXED_A5_ZONES.NUMERIC.capacity) return false;
+  const numericHeight=buckets.NUMERIC.reduce((s,it)=>s+fixedNumericItemHeight(it),0);
+  return numericHeight<=FIXED_A5_ZONES.NUMERIC.bodyHeight+.01;
 }
-function sectionInnerColumns(group,width){
-  const n=group.items.length;
-  if(group.key==='MCQ'){
-    if(width<90) return n>10?2:1;
-    return n>30?4:n>18?3:n>9?2:1;
-  }
-  if(group.key==='TF'){
-    if(width<70) return n>5?2:1;
-    return n>20?4:n>10?3:n>5?2:1;
-  }
-  if(group.key==='WRITTEN'){
-    const longest=groupLongestAnswer(group);
-    if(width<90) return 1;
-    if(longest>10) return n>8?2:1;
-    return n>18?3:n>7?2:1;
-  }
-  if(group.key==='NUMERIC'){
-    return (width>100 && n>8 && group.items.every(it=>numericBubbleSpec(it).digits===1))?2:1;
-  }
-  return 1;
-}
-function sectionRowHeight(group,width,cols){
-  const rows=Math.max(1,Math.ceil(group.items.length/cols));
-  if(group.key==='MCQ') return clamp(54/rows,5.1,6.1);
-  if(group.key==='TF') return clamp(52/rows,6.2,10.2);
-  if(group.key==='WRITTEN') return clamp(47/rows,6.2,7.2);
-  return 6.1;
-}
-function sectionMetrics(group,width){
-  const cols=sectionInnerColumns(group,width);
-  const n=group.items.length,subWidth=width/cols,placements=[];
-  const rowH=sectionRowHeight(group,width,cols);
-  let idx=0,maxH=0;
-
-  for(let col=0;col<cols;col++){
-    const remaining=n-idx,remainingCols=cols-col;
-    const count=Math.ceil(remaining/remainingCols);
-    let cy=0;
-    for(let k=0;k<count && idx<n;k++,idx++){
-      const it=group.items[idx];
-      let h=rowH;
-      if(group.key==='NUMERIC'){
-        const spec=numericBubbleSpec(it);
-        h=spec.auto?Math.max(6.1,3.1+spec.digits*3.55):7;
-      }
-      placements.push({
-        it,kind:group.key,relX:col*subWidth,relY:cy,width:subWidth,height:h,
-        numericSpec:group.key==='NUMERIC'?numericBubbleSpec(it):null
-      });
-      cy+=h;
+function makeFixedA5Section(zone,items){
+  const subWidth=zone.width/zone.columns;
+  const rowsPerCol=Math.ceil(zone.capacity/zone.columns);
+  const placements=[];
+  items.forEach((it,index)=>{
+    const col=zone.columns===1?0:Math.floor(index/rowsPerCol);
+    const row=zone.columns===1?index:index%rowsPerCol;
+    let relY=row*zone.rowHeight,height=zone.rowHeight;
+    if(zone.key==='NUMERIC'){
+      relY=items.slice(0,index).reduce((s,x)=>s+fixedNumericItemHeight(x),0);
+      height=fixedNumericItemHeight(it);
     }
-    maxH=Math.max(maxH,cy);
-  }
-  return {cols,subWidth,placements,bodyHeight:maxH,totalHeight:SHEET_BLOCK_HEAD_H_MM+maxH};
-}
-function makeCompactSection(group,x,y,width,continuation=false){
-  const m=sectionMetrics(group,width);
-  const sec={
-    key:group.key,letter:group.letter,title:group.title,instruction:group.instruction,
-    x,y,width,continuation,columns:m.cols,bodyHeight:m.bodyHeight,items:[]
+    placements.push({
+      it,kind:zone.key,
+      x:zone.x+col*subWidth,
+      y:zone.y+SHEET_BLOCK_HEAD_H_MM+relY,
+      width:subWidth,
+      height,
+      numericSpec:zone.key==='NUMERIC'?numericBubbleSpec(it):null
+    });
+  });
+  return {
+    ...zone,
+    continuation:false,
+    items:placements,
+    templateFixed:true
   };
-  const bodyTop=y+SHEET_BLOCK_HEAD_H_MM;
-  sec.items=m.placements.map(p=>({...p,x:x+p.relX,y:bodyTop+p.relY}));
+}
+function buildFixedA5WireframePage(){
+  const buckets=fixedSheetBuckets();
+  if(!canUseFixedA5Template(buckets)) return null;
+  const sections=[
+    makeFixedA5Section(FIXED_A5_ZONES.MCQ,buckets.MCQ),
+    makeFixedA5Section(FIXED_A5_ZONES.TF,buckets.TF),
+    makeFixedA5Section(FIXED_A5_ZONES.NUMERIC,buckets.NUMERIC),
+    makeFixedA5Section(FIXED_A5_ZONES.WRITTEN,buckets.WRITTEN)
+  ];
+  return {
+    fixedTemplate:true,
+    templateName:'A5-50-MIXED',
+    sections,
+    items:sections.flatMap(s=>s.items)
+  };
+}
+
+/* Readable fallback only when the fixed 50-item template cannot hold the assessment. */
+function fallbackGroups(){
+  const buckets=fixedSheetBuckets();
+  return [
+    {...FIXED_A5_ZONES.MCQ,items:buckets.MCQ},
+    {...FIXED_A5_ZONES.TF,items:buckets.TF},
+    {...FIXED_A5_ZONES.NUMERIC,items:buckets.NUMERIC},
+    {...FIXED_A5_ZONES.WRITTEN,items:buckets.WRITTEN}
+  ].filter(g=>g.items.length);
+}
+function fallbackSection(group,items,y){
+  const width=SHEET_CONTENT_W_MM,cols=group.key==='MCQ'?2:(group.key==='TF'?2:(group.key==='WRITTEN'?2:1));
+  const subWidth=width/cols,rows=Math.ceil(items.length/cols);
+  const rowH=group.key==='MCQ'?5.4:group.key==='TF'?7:group.key==='WRITTEN'?7:6;
+  const sec={
+    ...group,x:SHEET_CONTENT_X_MM,y,width,columns:cols,
+    bodyHeight:group.key==='NUMERIC'
+      ?items.reduce((s,it)=>s+fixedNumericItemHeight(it),0)
+      :rows*rowH,
+    items:[],continuation:false,templateFixed:false
+  };
+  items.forEach((it,index)=>{
+    const col=cols===1?0:Math.floor(index/rows);
+    const row=cols===1?index:index%rows;
+    let relY=row*rowH,height=rowH;
+    if(group.key==='NUMERIC'){
+      relY=items.slice(0,index).reduce((s,x)=>s+fixedNumericItemHeight(x),0);
+      height=fixedNumericItemHeight(it);
+    }
+    sec.items.push({
+      it,kind:group.key,x:SHEET_CONTENT_X_MM+col*subWidth,
+      y:y+SHEET_BLOCK_HEAD_H_MM+relY,width:subWidth,height,
+      numericSpec:group.key==='NUMERIC'?numericBubbleSpec(it):null
+    });
+  });
   return sec;
 }
-function buildA5SinglePage(groups){
-  const page={sections:[],items:[]};
-  let y=SHEET_CONTENT_TOP_MM;
-  const used=new Set();
-  const mcq=groups.find(g=>g.key==='MCQ');
-  const tf=groups.find(g=>g.key==='TF');
-
-  if(mcq && tf){
-    const leftW=75,rightW=SHEET_CONTENT_W_MM-leftW-SHEET_PAIR_GAP_MM;
-    const left=makeCompactSection(mcq,SHEET_CONTENT_X_MM,y,leftW,false);
-    const right=makeCompactSection(tf,SHEET_CONTENT_X_MM+leftW+SHEET_PAIR_GAP_MM,y,rightW,false);
-    const h=Math.max(SHEET_BLOCK_HEAD_H_MM+left.bodyHeight,SHEET_BLOCK_HEAD_H_MM+right.bodyHeight);
-    if(y+h>SHEET_CONTENT_BOTTOM_MM) return null;
-    page.sections.push(left,right); page.items.push(...left.items,...right.items);
-    used.add(mcq.key); used.add(tf.key);
-    y+=h+SHEET_BLOCK_GAP_MM;
-  }
-
+function buildFallbackPages(){
+  const groups=fallbackGroups(),pages=[];
+  let page={fixedTemplate:false,sections:[],items:[]},y=SHEET_CONTENT_TOP_MM;
+  const push=()=>{if(page.items.length) pages.push(page);page={fixedTemplate:false,sections:[],items:[]};y=SHEET_CONTENT_TOP_MM;};
   for(const group of groups){
-    if(used.has(group.key)) continue;
-    const sec=makeCompactSection(group,SHEET_CONTENT_X_MM,y,SHEET_CONTENT_W_MM,false);
-    const h=SHEET_BLOCK_HEAD_H_MM+sec.bodyHeight;
-    if(y+h>SHEET_CONTENT_BOTTOM_MM) return null;
-    page.sections.push(sec); page.items.push(...sec.items);
-    y+=h+SHEET_BLOCK_GAP_MM;
-  }
-  return page;
-}
-function buildFallbackPages(groups){
-  const pages=[];
-  let page={sections:[],items:[]},y=SHEET_CONTENT_TOP_MM;
-  const push=()=>{if(page.items.length) pages.push(page);page={sections:[],items:[]};y=SHEET_CONTENT_TOP_MM;};
-
-  for(const original of groups){
-    let remaining=[...original.items],continuation=false;
+    let remaining=[...group.items];
     while(remaining.length){
       let best=null;
-      for(let count=1;count<=remaining.length;count++){
-        const g={...original,items:remaining.slice(0,count)};
-        const sec=makeCompactSection(g,SHEET_CONTENT_X_MM,y,SHEET_CONTENT_W_MM,continuation);
-        if(y+SHEET_BLOCK_HEAD_H_MM+sec.bodyHeight<=SHEET_CONTENT_BOTTOM_MM) best={count,sec};
+      for(let n=1;n<=remaining.length;n++){
+        const sec=fallbackSection(group,remaining.slice(0,n),y);
+        if(y+SHEET_BLOCK_HEAD_H_MM+sec.bodyHeight<=SHEET_CONTENT_BOTTOM_MM) best={n,sec};
         else break;
       }
-      if(!best){ if(page.items.length){push();continue;} best={count:1,sec:makeCompactSection({...original,items:[remaining[0]]},SHEET_CONTENT_X_MM,y,SHEET_CONTENT_W_MM,continuation)}; }
+      if(!best){ if(page.items.length){push();continue;} best={n:1,sec:fallbackSection(group,[remaining[0]],y)}; }
       page.sections.push(best.sec);page.items.push(...best.sec.items);
-      y+=SHEET_BLOCK_HEAD_H_MM+best.sec.bodyHeight+SHEET_BLOCK_GAP_MM;
-      remaining=remaining.slice(best.count);continuation=true;
+      y+=SHEET_BLOCK_HEAD_H_MM+best.sec.bodyHeight+2;
+      remaining=remaining.slice(best.n);
       if(remaining.length) push();
     }
   }
@@ -351,11 +350,9 @@ function buildFallbackPages(groups){
 }
 function buildSectionedLayoutPages(){
   if(!assessment) return [];
-  const groups=sheetBlockGroups();
-  if(!groups.length) return [];
-  const one=buildA5SinglePage(groups);
-  if(one) return [one];
-  return buildFallbackPages(groups);
+  const fixed=buildFixedA5WireframePage();
+  if(fixed) return [fixed];
+  return buildFallbackPages();
 }
 function answerLayoutPage(pageNo){
   return buildSectionedLayoutPages()[Math.max(0,Number(pageNo||1)-1)] || {sections:[],items:[]};
