@@ -165,6 +165,28 @@ button,.btn,select,input{font:inherit}.hide{display:none!important}.no-select{us
 @media screen and (max-width:900px){
   .answer-block-head span{font-size:5.8pt}
 }
+
+/* ===== COMPACT 50-ITEM + MULTI-MARK CALIBRATION ===== */
+.registration-marker{position:absolute;width:3.3mm;height:3.3mm;background:#000;z-index:6}
+.compact-50-sheet .answer-block-head{height:6.2mm;padding:0 1.8mm}
+.compact-50-sheet .answer-block-head b{font-size:7.7pt}
+.compact-50-sheet .answer-block-head span{font-size:5.55pt;line-height:1}
+.compact-50-sheet .block-sheet-row,
+.compact-50-sheet .block-written-row,
+.compact-50-sheet .numeric-horizontal-item{overflow:hidden}
+.compact-50-sheet .block-item-no,
+.compact-50-sheet .numeric-h-item-no{left:1.7mm;top:.95mm;font-size:7.2pt;line-height:1;font-weight:800}
+.compact-50-sheet .block-written-row .block-item-no{top:1.55mm}
+.compact-50-sheet .block-bubble{top:.78mm;width:3.7mm;height:3.7mm;border:.3mm solid #111;font-size:4.9pt}
+.compact-50-sheet .block-char-boxes{height:5.4mm}
+.compact-50-sheet .block-char-box{border:.28mm solid #111;border-radius:.25mm}
+.compact-50-sheet .numeric-h-item-no{top:1.15mm}
+.compact-50-sheet .numeric-sign-bubble,
+.compact-50-sheet .numeric-h-bubble{width:2.8mm;height:2.8mm;border:.27mm solid #111;font-size:3.7pt}
+.compact-50-sheet .numeric-sign-bubble{font-size:4.3pt;font-weight:900}
+.compact-column-divider{position:absolute;width:.2mm;background:#c8c1c5;opacity:.8}
+.compact-50-sheet .sheet-marking-guide{font-size:5.9pt}
+.compact-50-sheet .sheet-marking-guide .mark-note{max-width:68mm}
 /* ===== END MODULAR ANSWER SHEET V3 ===== */
 
 @media print{
