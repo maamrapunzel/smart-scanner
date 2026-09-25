@@ -231,6 +231,57 @@ button,.btn,select,input{font:inherit}.hide{display:none!important}.no-select{us
 }
 /* ===== END TRUE A5 ANSWER SHEET ===== */
 
+
+/* ===== FIXED A5 50-ITEM WIREFRAME ===== */
+.fixed-a5-template .sheet-head{top:2.2mm}
+.fixed-a5-template .sheet-head h3{font-size:12.6pt;font-weight:900;letter-spacing:.08pt}
+.fixed-a5-template .sheet-head .meta{font-size:6.7pt;margin-top:.45mm}
+.fixed-a5-template .sheet-rule{top:10.9mm;font-size:4.8pt}
+.fixed-a5-template .sheet-student{top:14.4mm;font-size:6.6pt;gap:1.15mm 4.4mm}
+.fixed-a5-template .sheet-line{min-height:3.9mm}
+.fixed-a5-template .sheet-qr{top:9.4mm;width:20mm;height:20mm}
+.fixed-a5-template .sheet-qr canvas,
+.fixed-a5-template .sheet-qr img{width:19mm!important;height:19mm!important}
+.fixed-a5-template .sheet-page-label{top:27.1mm;font-size:5.7pt}
+
+.fixed-a5-template .answer-block-outline{border:.3mm solid #484548;border-radius:.8mm}
+.fixed-a5-template .answer-block-head{
+  height:6.2mm;background:linear-gradient(180deg,#fafafa,#eeeeee);
+  border:.3mm solid #484548;border-radius:.8mm .8mm 0 0;padding:0 1.55mm
+}
+.fixed-a5-template .answer-block-head b{font-size:7.45pt;font-weight:900}
+.fixed-a5-template .answer-block-head span{font-size:4.55pt;font-weight:700;color:#2f2d2f;max-width:43%}
+.fixed-a5-template .compact-column-divider{background:#9f9a9d;width:.22mm;opacity:.7}
+
+.fixed-a5-template .block-sheet-row,
+.fixed-a5-template .block-written-row,
+.fixed-a5-template .numeric-horizontal-item{border-bottom:.13mm solid #dedbdd}
+.fixed-a5-template .block-item-no,
+.fixed-a5-template .numeric-h-item-no{left:1.45mm;font-size:7.4pt;font-weight:900}
+.fixed-a5-template .block-bubble{
+  width:4.8mm;height:4.8mm;border:.32mm solid #111;background:#fff;
+  font-size:5.8pt;font-weight:500
+}
+.fixed-a5-template .block-char-boxes{height:6.2mm}
+.fixed-a5-template .block-char-box{
+  border:.32mm solid #111;border-radius:.18mm;background:#fff
+}
+.fixed-a5-template .numeric-sign-bubble,
+.fixed-a5-template .numeric-h-bubble{
+  width:4.1mm;height:4.1mm;border:.3mm solid #111;background:#fff;font-size:5pt
+}
+.fixed-a5-template .numeric-sign-bubble{font-size:5.4pt;font-weight:900}
+
+.fixed-a5-template .sheet-marking-guide{
+  left:8.5mm;right:8.5mm;bottom:4.1mm;height:8.5mm;border:.28mm solid #4b484a;
+  border-radius:.7mm;padding:.9mm 2mm;gap:1.1mm;font-size:4.65pt
+}
+.fixed-a5-template .sheet-marking-guide>b{font-size:6pt}
+.fixed-a5-template .sheet-marking-guide .mark-good{font-size:10.5pt}
+.fixed-a5-template .sheet-marking-guide .mark-bad{font-size:7.7pt}
+.fixed-a5-template .sheet-marking-guide .mark-note{max-width:47mm;font-size:4.35pt}
+/* ===== END FIXED A5 50-ITEM WIREFRAME ===== */
+
 /* ===== MOBILE FULL-SCREEN PORTRAIT SCANNER ===== */
 .scan-guide-text,.portrait-hint,.mobile-scan-controls{display:none}
 @media(max-width:980px){
