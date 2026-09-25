@@ -114,6 +114,7 @@ function sourceToImageData(source){
 }
 async function processSource(source){
   if(!assessment) return;
+  const wasLive=source?.tagName==='VIDEO';
   try{
     setStatus('scanStatus','Reading QR and registration markers…','neutral');
     const {canvas,data}=sourceToImageData(source);
@@ -125,7 +126,12 @@ async function processSource(source){
     renderReview();
     const unread=Object.values(result.answers).filter(v=>!v).length;
     setStatus('scanStatus',`Page ${pageNo} read using ${result.registrationCount||4} registration marks. Review ${unread?'unread/manual items':'detected answers'} before saving.`,'ok');
-  }catch(err){ console.error(err); pendingReview=null; renderReview(); setStatus('scanStatus','Scan failed: '+err.message,'bad'); }
+    if(wasLive) stopCamera();
+  }catch(err){
+    console.error(err);
+    if(wasLive) stopCamera();
+    pendingReview=null; renderReview(); setStatus('scanStatus','Scan failed: '+err.message,'bad');
+  }
 }
 function readQr(img){
   if(typeof jsQR==='undefined') return null;
