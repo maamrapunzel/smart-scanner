@@ -1,4 +1,4 @@
-const CACHE = 'smart-scanner-v2-shell-18';
+const CACHE = 'smart-scanner-v2-shell-19';
 const SHELL = [
   './','./index.html','./styles.css','./app.js',
   './app-part1.js','./app-part2.js','./app-part3.js',
