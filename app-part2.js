@@ -203,7 +203,7 @@ function characterBoxesHtml(it,layout){
   const left=10.5;
   const available=Math.max(12,layout.width-left-2.5);
   const gap=count>10?.28:.42;
-  const size=clamp((available-gap*(count-1))/count,2.8,5.8);
+  const size=clamp((available-gap*(count-1))/count,3.0,6.4);
   return `<span class="block-char-boxes" style="left:${left}mm;top:.65mm;gap:${gap}mm">${Array.from({length:count},()=>`<span class="block-char-box" style="width:${size}mm;height:${size}mm"></span>`).join('')}</span>`;
 }
 function buildSectionedItem(layout){
