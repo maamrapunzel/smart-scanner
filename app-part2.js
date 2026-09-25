@@ -148,8 +148,10 @@ function buildAnswerPage(learner,pageNo,totalPages,layoutPage){
   const qrText=learner.generic?'':`SS2|${assessment.id}|${encodeURIComponent(key)}|${pageNo}`;
   const totalPoints=assessment.items.reduce((sum,it)=>sum+(Number(it.points)||0),0);
   const sectionHtml=layoutPage.sections.map(buildSectionBlock).join('');
-  return `<section class="answer-page block-answer-sheet">
+  const registrationHtml=REGISTRATION_MARKS_MM.map(([x,y])=>`<span class="registration-marker" style="left:${x-1.65}mm;top:${y-1.65}mm"></span>`).join('');
+  return `<section class="answer-page block-answer-sheet compact-50-sheet">
     <div class="marker m-tl"></div><div class="marker m-tr"></div><div class="marker m-bl"></div><div class="marker m-br"></div>
+    ${registrationHtml}
 
     <div class="sheet-head">
       <h3>SMART SCANNER ANSWER SHEET</h3>
@@ -174,7 +176,7 @@ function buildAnswerPage(learner,pageNo,totalPages,layoutPage){
       <b>MARKING:</b>
       <span class="mark-good">●</span><span>Correct mark</span>
       <span class="mark-bad">✕ &nbsp; ✓ &nbsp; ◐</span><span>Incorrect marks</span>
-      <span class="mark-note">Use black or blue pen • No erasures • Keep the four black squares clean</span>
+      <span class="mark-note">Use black or blue pen • No erasures • Keep all black registration squares clean</span>
     </div>
   </section>`;
 }
@@ -185,57 +187,54 @@ function buildSectionBlock(sec){
     <span>${escapeHtml(sec.instruction)}</span>
   </div>`;
   const outline=`<div class="answer-block-outline" style="left:${sec.x}mm;top:${sec.y}mm;width:${sec.width}mm;height:${SHEET_BLOCK_HEAD_H_MM+sec.bodyHeight}mm"></div>`;
-  return outline+head+sec.items.map(buildSectionedItem).join('');
+  const dividers=sec.columns>1?Array.from({length:sec.columns-1},(_,i)=>{
+    const left=sec.x+(sec.width/sec.columns)*(i+1);
+    return `<span class="compact-column-divider" style="left:${left}mm;top:${sec.y+SHEET_BLOCK_HEAD_H_MM}mm;height:${sec.bodyHeight}mm"></span>`;
+  }).join(''):'';
+  return outline+head+dividers+sec.items.map(buildSectionedItem).join('');
 }
 function boxCountForItem(it){
   return boxCountForSheetItem(it);
 }
 function characterBoxesHtml(it,layout){
   const count=boxCountForItem(it);
-  const available=62;
-  const gap=.55;
-  const size=clamp((available-gap*(count-1))/count,3.15,5.25);
-  return `<span class="block-char-boxes" style="left:18mm;top:.9mm;gap:${gap}mm">${Array.from({length:count},()=>`<span class="block-char-box" style="width:${size}mm;height:${size}mm"></span>`).join('')}</span>`;
+  const left=10.5;
+  const available=Math.max(12,layout.width-left-2.5);
+  const gap=count>10?.28:.42;
+  const size=clamp((available-gap*(count-1))/count,2.35,4.75);
+  return `<span class="block-char-boxes" style="left:${left}mm;top:.65mm;gap:${gap}mm">${Array.from({length:count},()=>`<span class="block-char-box" style="width:${size}mm;height:${size}mm"></span>`).join('')}</span>`;
 }
 function buildSectionedItem(layout){
   const it=layout.it;
   if(layout.kind==='MCQ'){
-    const labels=mcqLabels();
-    const bubbles=labels.map((lab,j)=>{
-      const cx=BLOCK_MCQ_BUBBLE_X_OFF[j];
-      return `<span class="block-bubble" style="left:${cx-2.35}mm">${lab}</span>`;
-    }).join('');
-    return `<div class="block-sheet-row" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm">
+    const labels=mcqLabels(),xs=mcqBubbleXOffsets(layout.width);
+    const bubbles=labels.map((lab,j)=>`<span class="block-bubble" style="left:${xs[j]-1.85}mm">${lab}</span>`).join('');
+    return `<div class="block-sheet-row" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm;height:${layout.height}mm">
       <span class="block-item-no">${it.no}.</span>${bubbles}
     </div>`;
   }
   if(layout.kind==='TF'){
-    const bubbles=['T','F'].map((lab,j)=>{
-      const cx=BLOCK_TF_BUBBLE_X_OFF[j];
-      return `<span class="block-bubble" style="left:${cx-2.35}mm">${lab}</span>`;
-    }).join('');
-    return `<div class="block-sheet-row" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm">
+    const xs=tfBubbleXOffsets(layout.width);
+    const bubbles=['T','F'].map((lab,j)=>`<span class="block-bubble" style="left:${xs[j]-1.85}mm">${lab}</span>`).join('');
+    return `<div class="block-sheet-row" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm;height:${layout.height}mm">
       <span class="block-item-no">${it.no}.</span>${bubbles}
     </div>`;
   }
   if(layout.kind==='NUMERIC' && layout.numericSpec?.auto) return buildNumericBubbleItem(layout);
-  return `<div class="block-written-row" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm">
+  return `<div class="block-written-row" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm;height:${layout.height}mm">
     <span class="block-item-no">${it.no}.</span>${characterBoxesHtml(it,layout)}
   </div>`;
 }
 function buildNumericBubbleItem(layout){
   const it=layout.it,spec=layout.numericSpec;
-  const signX=NUMERIC_SIGN_X_OFF_MM;
+  const signX=numericSignXOffset();
+  const xs=numericDigitBubbleXOffsets(layout.width);
   const signY=NUMERIC_ROW_TOP_MM;
-  const sign=`<span class="numeric-sign-bubble" style="left:${signX-1.75}mm;top:${signY-1.75}mm">−</span>`;
+  const sign=`<span class="numeric-sign-bubble" style="left:${signX-1.4}mm;top:${signY-1.4}mm">−</span>`;
   const rows=Array.from({length:spec.digits},(_,digitIndex)=>{
     const y=NUMERIC_ROW_TOP_MM+digitIndex*NUMERIC_ROW_GAP_MM;
-    const label=`<span class="numeric-row-label" style="left:${NUMERIC_DIGIT_LABEL_X_OFF_MM}mm;top:${y-1.7}mm">D${digitIndex+1}</span>`;
-    const bubbles=Array.from({length:10},(_,n)=>{
-      const x=NUMERIC_DIGIT_X0_OFF_MM+n*NUMERIC_DIGIT_X_STEP_MM;
-      return `<span class="numeric-h-bubble" style="left:${x-1.65}mm;top:${y-1.65}mm">${n}</span>`;
-    }).join('');
-    return label+bubbles;
+    const bubbles=Array.from({length:10},(_,n)=>`<span class="numeric-h-bubble" style="left:${xs[n]-1.4}mm;top:${y-1.4}mm">${n}</span>`).join('');
+    return bubbles;
   }).join('');
   return `<div class="numeric-horizontal-item" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm;height:${layout.height}mm">
     <span class="numeric-h-item-no">${it.no}.</span>${sign}${rows}
