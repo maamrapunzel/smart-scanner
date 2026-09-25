@@ -155,25 +155,28 @@ function validateAssessment(a){
 }
 function mcqLabels(){ return Number(assessment?.info?.['MCQ Choices']||4)===5?['A','B','C','D','E']:['A','B','C','D']; }
 
-const SHEET_CONTENT_TOP_MM = 57;
+const SHEET_CONTENT_TOP_MM = 55;
 const SHEET_CONTENT_BOTTOM_MM = 268;
-const SHEET_BLOCK_LEFT_X_MM = 17;
-const SHEET_BLOCK_RIGHT_X_MM = 106.5;
-const SHEET_BLOCK_W_MM = 86.5;
-const SHEET_BLOCK_HEAD_H_MM = 7.2;
-const SHEET_BLOCK_GAP_MM = 3.2;
-const BASIC_ROW_H_MM = 7;
-const BOX_ROW_H_MM = 9.2;
+const SHEET_CONTENT_X_MM = 17;
+const SHEET_CONTENT_W_MM = 176;
+const SHEET_BLOCK_GAP_MM = 2.6;
+const SHEET_HALF_GAP_MM = 3;
+const SHEET_HALF_W_MM = (SHEET_CONTENT_W_MM-SHEET_HALF_GAP_MM)/2;
+const SHEET_BLOCK_HEAD_H_MM = 6.2;
 
-const BLOCK_MCQ_BUBBLE_X_OFF = [25,36,47,58,69];
-const BLOCK_TF_BUBBLE_X_OFF = [31,49];
+const BASIC_ROW_H_MM = 5.35;
+const BOX_ROW_H_MM = 6.8;
+const NUMERIC_ROW_TOP_MM = 3.0;
+const NUMERIC_ROW_GAP_MM = 3.55;
 
-const NUMERIC_ROW_TOP_MM = 5.2;
-const NUMERIC_ROW_GAP_MM = 5.0;
-const NUMERIC_SIGN_X_OFF_MM = 18;
-const NUMERIC_DIGIT_LABEL_X_OFF_MM = 24;
-const NUMERIC_DIGIT_X0_OFF_MM = 34;
-const NUMERIC_DIGIT_X_STEP_MM = 5.0;
+const REGISTRATION_MARKS_MM = [
+  [10,58],[200,58],
+  [10,96],[200,96],
+  [10,134],[200,134],
+  [10,172],[200,172],
+  [10,210],[200,210],
+  [10,248],[200,248]
+];
 
 function canonicalSheetType(type){
   if(type==='MCQ') return 'MCQ';
@@ -193,10 +196,27 @@ function boxCountForSheetItem(it){
   const answers=[it.key,...(it.accepted||[])].map(v=>String(v??'').replace(/\s+/g,''));
   return clamp(Math.max(1,...answers.map(v=>v.length)),1,16);
 }
-function sheetBlockItemHeight(kind,it){
+function mcqBubbleXOffsets(width){
+  const count=mcqLabels().length;
+  const start=13.2,end=Math.max(start+1,width-4.3);
+  const step=count>1?Math.min(7.0,(end-start)/(count-1)):0;
+  return Array.from({length:count},(_,i)=>start+i*step);
+}
+function tfBubbleXOffsets(width){
+  const a=Math.min(width-15,18);
+  const b=Math.min(width-4.5,31);
+  return [a,Math.max(a+9,b)];
+}
+function numericSignXOffset(){ return 7.5; }
+function numericDigitBubbleXOffsets(width){
+  const start=12.3,end=Math.max(start+27,width-3.7);
+  const step=Math.min(3.45,(end-start)/9);
+  return Array.from({length:10},(_,i)=>start+i*step);
+}
+function sheetItemHeight(kind,it){
   if(kind==='NUMERIC'){
     const spec=numericBubbleSpec(it);
-    if(spec.auto) return 7.8 + spec.digits*NUMERIC_ROW_GAP_MM;
+    if(spec.auto) return 3.5+spec.digits*NUMERIC_ROW_GAP_MM;
     return BOX_ROW_H_MM;
   }
   if(kind==='WRITTEN') return BOX_ROW_H_MM;
@@ -208,73 +228,135 @@ function sheetBlockGroups(){
   const meta={
     MCQ:{key:'MCQ',title:'MULTIPLE CHOICE',instruction:'Shade one circle only.'},
     WRITTEN:{key:'WRITTEN',title:'ALGEBRAIC / WORD ANSWERS',instruction:'Write one character or symbol per box.'},
-    NUMERIC:{key:'NUMERIC',title:'NUMERIC ANSWERS',instruction:'Shade one digit per row. Use the minus sign only when needed.'},
+    NUMERIC:{key:'NUMERIC',title:'NUMERIC ANSWERS',instruction:'Shade one digit in each row; use minus only when needed.'},
     TF:{key:'TF',title:'TRUE OR FALSE',instruction:'Shade T or F only.'}
   };
   assessment.items.forEach((it,index)=>{
     const t=canonicalSheetType(it.type);
-    const key=t==='MCQ'?'MCQ':t==='TRUE/FALSE'?'TF':t==='NUMERICAL-BOX'?'NUMERIC':(['WORD-BOX','ALGEBRAIC-BOX'].includes(t)?'WRITTEN':'WRITTEN');
+    const key=t==='MCQ'?'MCQ':t==='TRUE/FALSE'?'TF':t==='NUMERICAL-BOX'?'NUMERIC':'WRITTEN';
     if(!buckets.has(key)) buckets.set(key,{...meta[key],items:[],firstIndex:index});
     buckets.get(key).items.push(it);
   });
-  return [...buckets.values()].sort((a,b)=>a.firstIndex-b.firstIndex).map((g,i)=>({...g,letter:String.fromCharCode(65+i),side:i%2===0?'left':'right'}));
+  return [...buckets.values()]
+    .sort((a,b)=>a.firstIndex-b.firstIndex)
+    .map((g,i)=>({...g,letter:String.fromCharCode(65+i)}));
 }
-function buildColumnLayoutPages(groups,side){
-  const x=side==='left'?SHEET_BLOCK_LEFT_X_MM:SHEET_BLOCK_RIGHT_X_MM;
+function groupLongestAnswer(group){
+  return Math.max(1,...group.items.map(boxCountForSheetItem));
+}
+function sectionInnerColumns(group,width){
+  const n=group.items.length;
+  let minSub=42,maxCap=4,targetPerCol=12;
+  if(group.key==='MCQ'){
+    minSub=mcqLabels().length===5?41:36; maxCap=4; targetPerCol=13;
+  }else if(group.key==='TF'){
+    minSub=29; maxCap=4; targetPerCol=14;
+  }else if(group.key==='WRITTEN'){
+    const longest=groupLongestAnswer(group);
+    minSub=longest>12?78:longest>8?57:40;
+    maxCap=4; targetPerCol=12;
+  }else if(group.key==='NUMERIC'){
+    minSub=41; maxCap=4; targetPerCol=12;
+  }
+  const maxCols=Math.max(1,Math.min(maxCap,Math.floor(width/minSub)));
+  return clamp(Math.ceil(n/targetPerCol),1,maxCols);
+}
+function sectionMetrics(group,width){
+  const cols=sectionInnerColumns(group,width);
+  const n=group.items.length;
+  const subWidth=width/cols;
+  const placements=[];
+  let idx=0,maxH=0;
+
+  for(let col=0;col<cols;col++){
+    const remaining=n-idx,remainingCols=cols-col;
+    const count=Math.ceil(remaining/remainingCols);
+    let cy=0;
+    for(let k=0;k<count && idx<n;k++,idx++){
+      const it=group.items[idx],h=sheetItemHeight(group.key,it);
+      placements.push({
+        it,kind:group.key,
+        relX:col*subWidth,relY:cy,
+        width:subWidth,height:h,
+        numericSpec:group.key==='NUMERIC'?numericBubbleSpec(it):null
+      });
+      cy+=h;
+    }
+    maxH=Math.max(maxH,cy);
+  }
+  return {cols,subWidth,placements,bodyHeight:maxH,totalHeight:SHEET_BLOCK_HEAD_H_MM+maxH};
+}
+function makeCompactSection(group,x,y,width,continuation=false){
+  const m=sectionMetrics(group,width);
+  const sec={
+    key:group.key,letter:group.letter,title:group.title,instruction:group.instruction,
+    x,y,width,continuation,columns:m.cols,bodyHeight:m.bodyHeight,items:[]
+  };
+  const bodyTop=y+SHEET_BLOCK_HEAD_H_MM;
+  sec.items=m.placements.map(p=>({
+    ...p,x:x+p.relX,y:bodyTop+p.relY
+  }));
+  return sec;
+}
+function buildSinglePageStrategy(groups,mode){
+  const page={sections:[],items:[]};
+  let y=SHEET_CONTENT_TOP_MM,i=0;
+  while(i<groups.length){
+    if(mode==='pairs' && i+1<groups.length){
+      const left=makeCompactSection(groups[i],SHEET_CONTENT_X_MM,y,SHEET_HALF_W_MM,false);
+      const right=makeCompactSection(groups[i+1],SHEET_CONTENT_X_MM+SHEET_HALF_W_MM+SHEET_HALF_GAP_MM,y,SHEET_HALF_W_MM,false);
+      const h=Math.max(SHEET_BLOCK_HEAD_H_MM+left.bodyHeight,SHEET_BLOCK_HEAD_H_MM+right.bodyHeight);
+      if(y+h<=SHEET_CONTENT_BOTTOM_MM){
+        page.sections.push(left,right); page.items.push(...left.items,...right.items);
+        y+=h+SHEET_BLOCK_GAP_MM; i+=2; continue;
+      }
+    }
+    const full=makeCompactSection(groups[i],SHEET_CONTENT_X_MM,y,SHEET_CONTENT_W_MM,false);
+    const h=SHEET_BLOCK_HEAD_H_MM+full.bodyHeight;
+    if(y+h>SHEET_CONTENT_BOTTOM_MM) return null;
+    page.sections.push(full); page.items.push(...full.items);
+    y+=h+SHEET_BLOCK_GAP_MM; i++;
+  }
+  return page;
+}
+function buildFallbackPages(groups){
   const pages=[];
-  const ensurePage=i=>{ while(pages.length<=i) pages.push({sections:[],items:[]}); return pages[i]; };
-  let pageIndex=0,y=SHEET_CONTENT_TOP_MM;
+  let page={sections:[],items:[]},y=SHEET_CONTENT_TOP_MM;
+  const pushPage=()=>{ if(page.items.length) pages.push(page); page={sections:[],items:[]}; y=SHEET_CONTENT_TOP_MM; };
 
-  for(const group of groups.filter(g=>g.side===side)){
-    let idx=0,continuation=false;
-    while(idx<group.items.length){
-      let page=ensurePage(pageIndex);
-      const firstH=sheetBlockItemHeight(group.key,group.items[idx]);
-      if(y+SHEET_BLOCK_HEAD_H_MM+firstH>SHEET_CONTENT_BOTTOM_MM && page.items.length){
-        pageIndex++; y=SHEET_CONTENT_TOP_MM; continue;
+  for(const original of groups){
+    let remaining=[...original.items],continuation=false;
+    while(remaining.length){
+      let best=null;
+      for(let count=1;count<=remaining.length;count++){
+        const trialGroup={...original,items:remaining.slice(0,count)};
+        const sec=makeCompactSection(trialGroup,SHEET_CONTENT_X_MM,y,SHEET_CONTENT_W_MM,continuation);
+        if(y+SHEET_BLOCK_HEAD_H_MM+sec.bodyHeight<=SHEET_CONTENT_BOTTOM_MM) best={count,sec};
+        else break;
       }
-      const sec={
-        key:group.key,letter:group.letter,title:group.title,instruction:group.instruction,
-        x,y,width:SHEET_BLOCK_W_MM,continuation,items:[],bodyHeight:0
-      };
-      page.sections.push(sec);
-      const bodyTop=y+SHEET_BLOCK_HEAD_H_MM;
-      let cursorY=bodyTop;
-
-      while(idx<group.items.length){
-        const it=group.items[idx],h=sheetBlockItemHeight(group.key,it);
-        if(cursorY+h>SHEET_CONTENT_BOTTOM_MM && sec.items.length) break;
-        if(cursorY+h>SHEET_CONTENT_BOTTOM_MM && !sec.items.length){
-          page.sections.pop(); pageIndex++; y=SHEET_CONTENT_TOP_MM; page=null; break;
-        }
-        const layout={
-          it,kind:group.key,x,y:cursorY,width:SHEET_BLOCK_W_MM,height:h,
-          numericSpec:group.key==='NUMERIC'?numericBubbleSpec(it):null
-        };
-        sec.items.push(layout); page.items.push(layout);
-        cursorY+=h; idx++;
+      if(!best){
+        if(page.items.length){ pushPage(); continue; }
+        const trialGroup={...original,items:[remaining[0]]};
+        best={count:1,sec:makeCompactSection(trialGroup,SHEET_CONTENT_X_MM,y,SHEET_CONTENT_W_MM,continuation)};
       }
-      if(!page) continue;
-
-      sec.bodyHeight=cursorY-bodyTop;
-      y=cursorY+SHEET_BLOCK_GAP_MM;
-      continuation=true;
-      if(idx<group.items.length){ pageIndex++; y=SHEET_CONTENT_TOP_MM; }
+      page.sections.push(best.sec); page.items.push(...best.sec.items);
+      y+=SHEET_BLOCK_HEAD_H_MM+best.sec.bodyHeight+SHEET_BLOCK_GAP_MM;
+      remaining=remaining.slice(best.count); continuation=true;
+      if(remaining.length) pushPage();
     }
   }
+  if(page.items.length) pages.push(page);
   return pages;
 }
 function buildSectionedLayoutPages(){
   if(!assessment) return [];
   const groups=sheetBlockGroups();
-  const left=buildColumnLayoutPages(groups,'left');
-  const right=buildColumnLayoutPages(groups,'right');
-  const count=Math.max(left.length,right.length,1);
-  const pages=Array.from({length:count},(_,i)=>({
-    sections:[...(left[i]?.sections||[]),...(right[i]?.sections||[])],
-    items:[...(left[i]?.items||[]),...(right[i]?.items||[])]
-  }));
-  return pages.filter(p=>p.items.length);
+  if(!groups.length) return [];
+  const paired=buildSinglePageStrategy(groups,'pairs');
+  if(paired) return [paired];
+  const full=buildSinglePageStrategy(groups,'full');
+  if(full) return [full];
+  return buildFallbackPages(groups);
 }
 function answerLayoutPage(pageNo){
   return buildSectionedLayoutPages()[Math.max(0,Number(pageNo||1)-1)] || {sections:[],items:[]};
