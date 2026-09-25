@@ -236,6 +236,7 @@ function fixedSheetBuckets(){
 }
 function canUseFixedA5Template(buckets){
   if((assessment?.items?.length||0)>50) return false;
+  if(mcqLabels().length!==4) return false;
   if(!buckets.MCQ.length || !buckets.TF.length || !buckets.NUMERIC.length || !buckets.WRITTEN.length) return false;
   if(buckets.MCQ.length>FIXED_A5_ZONES.MCQ.capacity) return false;
   if(buckets.TF.length>FIXED_A5_ZONES.TF.capacity) return false;
