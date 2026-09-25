@@ -79,6 +79,19 @@ button,.btn,select,input{font:inherit}.hide{display:none!important}.no-select{us
 }
 /* ===== END PREMIUM DASHBOARD ===== */
 
+
+/* DepEd-style reports */
+.report-kpis{grid-template-columns:repeat(5,minmax(0,1fr))}
+.report-wide-table{max-height:62vh}
+.report-wide-table table{min-width:1100px}
+.report-wide-table th,.report-wide-table td{text-align:center;white-space:nowrap}
+.report-wide-table th:first-child,.report-wide-table td:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:1}
+.report-wide-table thead th:first-child{background:#fff1f6;z-index:3}
+#reportItemTable thead tr:first-child th{background:#ffe3ef;color:#6f2445}
+#reportItemTable thead tr:nth-child(2) th{top:34px;background:#fff3f8}
+#reportItemTable tbody td:nth-last-child(-n+3){font-weight:800}
+#reports .hint{margin-bottom:0}
+@media(max-width:900px){.report-kpis{grid-template-columns:repeat(2,1fr)}}
 /* Physical print-sheet layouts */
 #sheetContainer{overflow:auto;padding:2mm 0 8mm}
 .print-sheet{position:relative;background:#fff;margin:0 auto 10mm;box-shadow:0 3px 18px rgba(0,0,0,.12);overflow:hidden;display:grid;transform-origin:top left}
