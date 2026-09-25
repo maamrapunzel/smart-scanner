@@ -145,7 +145,7 @@ function miniBubbleDarkness(img,H,xmm,ymm){
   return {avg:sum/n,ratio:dark/n};
 }
 function detectNumericDigitRow(img,H,layout,digitIndex){
-  const y=layout.y+NUMERIC_ROW_TOP_MM+digitIndex*NUMERIC_ROW_GAP_MM;
+  const y=layout.y+window.NUMERIC_ROW_TOP_MM+digitIndex*window.NUMERIC_ROW_GAP_MM;
   const xs=numericDigitBubbleXOffsets(layout.width);
   const vals=Array.from({length:10},(_,digit)=>{
     const x=layout.x+xs[digit];
@@ -167,7 +167,7 @@ function detectNumericBubbleAnswer(img,H,layout){
   }
 
   const signX=layout.x+numericSignXOffset();
-  const signY=layout.y+NUMERIC_ROW_TOP_MM;
+  const signY=layout.y+window.NUMERIC_ROW_TOP_MM;
   const sign=miniBubbleDarkness(img,H,signX,signY);
   const negative=sign.avg>78;
   const complete=digits.every(Boolean);
