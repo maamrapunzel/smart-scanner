@@ -52,16 +52,16 @@ function sourceToImageData(source){
 async function processSource(source){
   if(!assessment) return;
   try{
-    setStatus('scanStatus','Reading QR and page markers…','neutral');
+    setStatus('scanStatus','Reading QR and registration markers…','neutral');
     const {canvas,data}=sourceToImageData(source);
     const qr=readQr(data);
     if(qr) applyQrSelection(qr); else $('qrStatus').textContent='QR: not detected — using manual learner/page selection';
     const pageNo=Number($('pageSelect').value||1);
     const result=analyzeImage(data,canvas,pageNo);
-    pendingReview={pageNo,answers:result.answers,crops:result.crops,metrics:result.metrics,markerScore:result.markerScore};
+    pendingReview={pageNo,answers:result.answers,crops:result.crops,metrics:result.metrics,markerScore:result.markerScore,registrationCount:result.registrationCount};
     renderReview();
     const unread=Object.values(result.answers).filter(v=>!v).length;
-    setStatus('scanStatus',`Page ${pageNo} read. Review ${unread?'unread/manual items':'detected answers'} before saving.`,'ok');
+    setStatus('scanStatus',`Page ${pageNo} read using ${result.registrationCount||4} registration marks. Review ${unread?'unread/manual items':'detected answers'} before saving.`,'ok');
   }catch(err){ console.error(err); pendingReview=null; renderReview(); setStatus('scanStatus','Scan failed: '+err.message,'bad'); }
 }
 function readQr(img){
@@ -80,8 +80,8 @@ function applyQrSelection(qr){
   $('qrStatus').textContent=matched?`QR: learner + page identified automatically (Page ${qr.pageNo})`:`QR: page identified; learner not found in current list`;
 }
 function analyzeImage(img,canvas,pageNo){
-  const markers=findFourMarkers(img);
-  const H=homographyFromPageMM([markers.tl,markers.tr,markers.br,markers.bl]);
+  const calibration=calibratePage(img);
+  const H=calibration.H;
   const page=answerLayoutPage(pageNo);
   const answers={},crops={},metrics={};
 
@@ -89,16 +89,16 @@ function analyzeImage(img,canvas,pageNo){
     const it=layout.it;
 
     if(layout.kind==='MCQ'){
-      const y=layout.y+BASIC_ROW_H_MM/2;
-      const xs=mcqLabels().map((_,j)=>layout.x+BLOCK_MCQ_BUBBLE_X_OFF[j]);
+      const y=layout.y+layout.height/2;
+      const xs=mcqBubbleXOffsets(layout.width).map(v=>layout.x+v);
       const r=detectBubbles(img,H,xs,y,mcqLabels());
       answers[it.no]=r.value; metrics[it.no]=r;
       return;
     }
 
     if(layout.kind==='TF'){
-      const y=layout.y+BASIC_ROW_H_MM/2;
-      const xs=BLOCK_TF_BUBBLE_X_OFF.map(v=>layout.x+v);
+      const y=layout.y+layout.height/2;
+      const xs=tfBubbleXOffsets(layout.width).map(v=>layout.x+v);
       const r=detectBubbles(img,H,xs,y,['TRUE','FALSE']);
       answers[it.no]=r.value; metrics[it.no]=r;
       return;
@@ -114,12 +114,15 @@ function analyzeImage(img,canvas,pageNo){
     metrics[it.no]={value:'',confidence:0,manual:true};
     crops[it.no]=makeCropDataUrl(
       canvas,H,
-      layout.x+14,layout.y,
-      layout.x+layout.width-3,
+      layout.x+8,layout.y,
+      layout.x+layout.width-2,
       Math.min(layout.y+layout.height,SHEET_CONTENT_BOTTOM_MM)
     );
   });
 
-  const markerScore=(markers.tl.score+markers.tr.score+markers.br.score+markers.bl.score)/4;
-  return {answers,crops,metrics,markerScore};
+  return {
+    answers,crops,metrics,
+    markerScore:calibration.score,
+    registrationCount:calibration.registrationCount
+  };
 }
