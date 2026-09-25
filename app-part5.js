@@ -43,18 +43,19 @@ $('exportExcelBtn').addEventListener('click',()=>{
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(responseRows()),'RESPONSES');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Item','Type','Key','Correct','Incorrect / Blank','% Correct','Competency Code','Learning Competency','Status'],...a.items.map(x=>[x.no,x.type,x.key,x.correct,x.incorrect,x.pct,x.competencyCode,x.competency,x.status])]),'ITEM ANALYSIS');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Competency Code','Learning Competency','Items','Mastery %','Status'],...a.competencies.map(x=>[x.code,x.name,x.itemCount,x.pct,x.status])]),'COMPETENCIES');
+  if(typeof buildDepEdAnalysisSheet==='function') XLSX.utils.book_append_sheet(wb,buildDepEdAnalysisSheet(),'DEPED ITEM ANALYSIS');
   XLSX.writeFile(wb,'SMART_SCANNER_RESULTS_AND_ANALYSIS.xlsx');
 });
 $('clearResultsBtn').addEventListener('click',()=>{
   if(!assessment||!confirm('Delete all saved results for this active assessment?')) return; const all=getAllResults(); all[assessment.id]={}; saveAllResults(all); renderResults(); renderAnalysis();
 });
 function resultsRows(){
-  const hdr=['Learner No.','LRN / ID','Learner Name','Section','Score','Total','Percent','Pending Review',...assessment.items.map(i=>'Q'+i.no)]; const rows=[hdr];
-  Object.values(activeResultSet()).forEach(rec=>{ const s=calculateLearnerResult(rec); rows.push([rec.learner.no,rec.learner.id,rec.learner.name,rec.learner.section,s.score,s.total,Number(s.pct.toFixed(2)),s.pending,...assessment.items.map(i=>s.merged[i.no]||'')]); }); return rows;
+  const hdr=['Learner No.','LRN / ID','Learner Name','Sex','Section','Score','Total','Percent','Pending Review',...assessment.items.map(i=>'Q'+i.no)]; const rows=[hdr];
+  Object.values(activeResultSet()).forEach(rec=>{ const s=calculateLearnerResult(rec),m=typeof reportLearnerMeta==='function'?reportLearnerMeta(rec.learner):rec.learner; rows.push([m.no,m.id,m.name,m.sex||'',m.section,s.score,s.total,Number(s.pct.toFixed(2)),s.pending,...assessment.items.map(i=>s.merged[i.no]||'')]); }); return rows;
 }
 function responseRows(){
-  const rows=[['Learner','LRN / ID','Item','Type','Response','Correct Answer','Score','Points','Competency Code','Learning Competency']];
-  Object.values(activeResultSet()).forEach(rec=>{ const s=calculateLearnerResult(rec); assessment.items.forEach(it=>rows.push([rec.learner.name,rec.learner.id,it.no,it.type,s.merged[it.no]||'',it.key,scoreAnswer(it,s.merged[it.no]),it.points,it.competencyCode,it.competency])); }); return rows;
+  const rows=[['Learner','LRN / ID','Sex','Section','Item','Type','Response','Correct Answer','Score','Points','Competency Code','Learning Competency']];
+  Object.values(activeResultSet()).forEach(rec=>{ const s=calculateLearnerResult(rec),m=typeof reportLearnerMeta==='function'?reportLearnerMeta(rec.learner):rec.learner; assessment.items.forEach(it=>rows.push([m.name,m.id,m.sex||'',m.section,it.no,it.type,s.merged[it.no]||'',it.key,scoreAnswer(it,s.merged[it.no]),it.points,it.competencyCode,it.competency])); }); return rows;
 }
 function csvCell(v){ return '"'+String(v??'').replace(/"/g,'""')+'"'; }
 function downloadBlob(filename,blob){ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500); }
