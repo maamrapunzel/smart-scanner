@@ -233,10 +233,10 @@ function buildNumericBubbleItem(layout){
   const it=layout.it,spec=layout.numericSpec;
   const signX=numericSignXOffset();
   const xs=numericDigitBubbleXOffsets(layout.width);
-  const signY=NUMERIC_ROW_TOP_MM;
+  const signY=window.NUMERIC_ROW_TOP_MM;
   const sign=`<span class="numeric-sign-bubble" style="left:${signX-2.05}mm;top:${signY-2.05}mm">−</span>`;
   const rows=Array.from({length:spec.digits},(_,digitIndex)=>{
-    const y=NUMERIC_ROW_TOP_MM+digitIndex*NUMERIC_ROW_GAP_MM;
+    const y=window.NUMERIC_ROW_TOP_MM+digitIndex*window.NUMERIC_ROW_GAP_MM;
     const bubbles=Array.from({length:10},(_,n)=>`<span class="numeric-h-bubble" style="left:${xs[n]-2.05}mm;top:${y-2.05}mm">${n}</span>`).join('');
     return bubbles;
   }).join('');
