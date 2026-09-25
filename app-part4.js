@@ -33,6 +33,72 @@ function findFourMarkers(img){
   const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y); if(Math.min(d(tl,tr),d(bl,br))<w*.55||Math.min(d(tl,bl),d(tr,br))<h*.55) throw new Error('Corner markers are too close together. Move back and capture the whole page.');
   return {tl,tr,br,bl};
 }
+function pointDistance(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
+function findLocalRegistrationSquare(I,w,h,pred,pxPerMm){
+  const expected=Math.max(7,3.3*pxPerMm);
+  const radius=Math.max(expected*2.1,5.5*pxPerMm);
+  const x0=Math.max(0,Math.floor(pred.x-radius)),x1=Math.min(w,Math.ceil(pred.x+radius));
+  const y0=Math.max(0,Math.floor(pred.y-radius)),y1=Math.min(h,Math.ceil(pred.y+radius));
+  let best=null;
+  for(const scale of [.78,1,1.2]){
+    const win=Math.max(6,Math.round(expected*scale));
+    const step=Math.max(1,Math.round(win/4));
+    for(let y=y0;y<=y1-win;y+=step){
+      for(let x=x0;x<=x1-win;x+=step){
+        const dark=rectSum(I,w,x,y,x+win,y+win),ratio=dark/(win*win);
+        if(!best||ratio>best.score) best={x:x+win/2,y:y+win/2,score:ratio,win};
+      }
+    }
+  }
+  if(!best||best.score<.42) return null;
+  if(pointDistance(best,pred)>radius*.92) return null;
+  return best;
+}
+function homographyFromPointPairs(mmPts,imgPts){
+  const A=[],b=[];
+  for(let i=0;i<mmPts.length;i++){
+    const [u,v]=mmPts[i],x=imgPts[i].x,y=imgPts[i].y;
+    A.push([u,v,1,0,0,0,-x*u,-x*v]); b.push(x);
+    A.push([0,0,0,u,v,1,-y*u,-y*v]); b.push(y);
+  }
+  if(A.length===8) return solveLinear(A,b);
+
+  const n=8,AtA=Array.from({length:n},()=>Array(n).fill(0)),Atb=Array(n).fill(0);
+  for(let r=0;r<A.length;r++){
+    for(let i=0;i<n;i++){
+      Atb[i]+=A[r][i]*b[r];
+      for(let j=0;j<n;j++) AtA[i][j]+=A[r][i]*A[r][j];
+    }
+  }
+  return solveLinear(AtA,Atb);
+}
+function calibratePage(img){
+  const markers=findFourMarkers(img);
+  const cornerMm=[MARKER_MM.tl,MARKER_MM.tr,MARKER_MM.br,MARKER_MM.bl];
+  const cornerImg=[markers.tl,markers.tr,markers.br,markers.bl];
+  let H=homographyFromPointPairs(cornerMm,cornerImg);
+
+  const horizontal=(pointDistance(markers.tl,markers.tr)+pointDistance(markers.bl,markers.br))/2/190;
+  const vertical=(pointDistance(markers.tl,markers.bl)+pointDistance(markers.tr,markers.br))/2/277;
+  const pxPerMm=(horizontal+vertical)/2;
+  const I=darkIntegral(img,85),foundMm=[],foundImg=[];
+
+  for(const mm of REGISTRATION_MARKS_MM){
+    const pred=mapH(H,mm[0],mm[1]);
+    const found=findLocalRegistrationSquare(I,img.width,img.height,pred,pxPerMm);
+    if(found){ foundMm.push(mm); foundImg.push(found); }
+  }
+
+  if(foundMm.length>=4){
+    H=homographyFromPointPairs([...cornerMm,...foundMm],[...cornerImg,...foundImg]);
+  }
+  const allScores=[markers.tl.score,markers.tr.score,markers.br.score,markers.bl.score,...foundImg.map(x=>x.score)];
+  return {
+    markers,H,
+    registrationCount:4+foundImg.length,
+    score:allScores.reduce((a,b)=>a+b,0)/allScores.length
+  };
+}
 function solveLinear(A,b){
   const n=b.length,M=A.map((r,i)=>[...r,b[i]]);
   for(let i=0;i<n;i++){
@@ -44,17 +110,18 @@ function solveLinear(A,b){
   return M.map(r=>r[n]);
 }
 function homographyFromPageMM(q){
-  const uv=[MARKER_MM.tl,MARKER_MM.tr,MARKER_MM.br,MARKER_MM.bl],A=[],b=[];
-  for(let i=0;i<4;i++){
-    const [u,v]=uv[i],x=q[i].x,y=q[i].y; A.push([u,v,1,0,0,0,-x*u,-x*v]); b.push(x); A.push([0,0,0,u,v,1,-y*u,-y*v]); b.push(y);
-  }
-  return solveLinear(A,b);
+  return homographyFromPointPairs(
+    [MARKER_MM.tl,MARKER_MM.tr,MARKER_MM.br,MARKER_MM.bl],
+    q
+  );
 }
 function mapH(H,u,v){ const[a,b,c,d,e,f,g,h]=H,den=g*u+h*v+1; return{x:(a*u+b*v+c)/den,y:(d*u+e*v+f)/den}; }
 function bubbleDarkness(img,H,xmm,ymm){
   let sum=0,n=0,dark=0;
-  for(let dy=-2.2;dy<=2.2;dy+=.5) for(let dx=-2.2;dx<=2.2;dx+=.5){
-    if(dx*dx+dy*dy>4.7) continue; const p=mapH(H,xmm+dx,ymm+dy),g=grayAt(img,p.x,p.y); sum+=255-g; if(g<140)dark++; n++;
+  for(let dy=-1.75;dy<=1.75;dy+=.4) for(let dx=-1.75;dx<=1.75;dx+=.4){
+    if(dx*dx+dy*dy>2.7) continue;
+    const p=mapH(H,xmm+dx,ymm+dy),g=grayAt(img,p.x,p.y);
+    sum+=255-g; if(g<140)dark++; n++;
   }
   return {avg:sum/n,ratio:dark/n};
 }
@@ -75,8 +142,9 @@ function miniBubbleDarkness(img,H,xmm,ymm){
 }
 function detectNumericDigitRow(img,H,layout,digitIndex){
   const y=layout.y+NUMERIC_ROW_TOP_MM+digitIndex*NUMERIC_ROW_GAP_MM;
+  const xs=numericDigitBubbleXOffsets(layout.width);
   const vals=Array.from({length:10},(_,digit)=>{
-    const x=layout.x+NUMERIC_DIGIT_X0_OFF_MM+digit*NUMERIC_DIGIT_X_STEP_MM;
+    const x=layout.x+xs[digit];
     return {digit,...miniBubbleDarkness(img,H,x,y)};
   }).sort((a,b)=>b.avg-a.avg);
 
@@ -94,7 +162,7 @@ function detectNumericBubbleAnswer(img,H,layout){
     conf.push(r.confidence);
   }
 
-  const signX=layout.x+NUMERIC_SIGN_X_OFF_MM;
+  const signX=layout.x+numericSignXOffset();
   const signY=layout.y+NUMERIC_ROW_TOP_MM;
   const sign=miniBubbleDarkness(img,H,signX,signY);
   const negative=sign.avg>78;
