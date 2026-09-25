@@ -38,10 +38,10 @@
     wsItems['!cols']=[{wch:10},{wch:18},{wch:18},{wch:25},{wch:20},{wch:50},{wch:10},{wch:28}];
     XLSX.utils.book_append_sheet(wb,wsItems,'ITEMS');
 
-    const learnerRows=[['Learner No.','Learner ID / LRN','Learner Name','Section']];
-    for(let i=1;i<=199;i++) learnerRows.push([i,'','','']);
+    const learnerRows=[['Learner No.','LRN / ID','Learner Name','Sex','Section']];
+    for(let i=1;i<=199;i++) learnerRows.push([i,'','','','']);
     const wsLearners=XLSX.utils.aoa_to_sheet(learnerRows);
-    wsLearners['!cols']=[{wch:13},{wch:20},{wch:35},{wch:20}];
+    wsLearners['!cols']=[{wch:13},{wch:20},{wch:35},{wch:10},{wch:20}];
     XLSX.utils.book_append_sheet(wb,wsLearners,'LEARNERS');
 
     const guide=[
@@ -55,7 +55,7 @@
       ['Competency Code','Optional code such as MELC/code used by your school or subject.'],
       ['Learning Competency / Skill','Write the exact skill/competency measured by the item. Items with the same competency will be grouped automatically in mastery analysis.'],
       ['Points','Default 1. You may assign more than 1 point to an item; scoring and analysis use the Points column.'],
-      ['LEARNERS','Recommended. Add learner names/IDs so personalized answer sheets can include QR learner identification.'],
+      ['LEARNERS','Recommended. Add learner names/IDs, Sex (M/F), and Section. Sex and Section are used for the DepEd-style Item Analysis report and personalized QR answer sheets.'],
       ['Important','Keep sheet/header names unchanged. Printed answer sheets are dynamic. Learners should use black or blue pen and make no erasures.']
     ];
     const wsGuide=XLSX.utils.aoa_to_sheet(guide);
