@@ -40,6 +40,7 @@
       <button class="nav-btn" data-screen="scanner"><span>⌁</span> Scanner</button>
       <button class="nav-btn" data-screen="results"><span>▦</span> Results</button>
       <button class="nav-btn" data-screen="analysis"><span>▥</span> Analysis</button>
+      <button class="nav-btn" data-screen="reports"><span>▧</span> Reports</button>
       <div class="sidebar-quote">
         <span>Make</span>
         <span>Assessment</span>
@@ -305,6 +306,68 @@
               <tbody id="resultsBody"></tbody>
             </table>
           </div>
+        </article>
+      </section>
+
+      <section id="reports" class="screen">
+        <div class="page-head no-print">
+          <div>
+            <span class="eyebrow">REPORTS</span>
+            <h2>DepEd-Style Item Analysis</h2>
+            <p>Section-by-section correct responses, rankings, MPS, performance level, MPL counts, and learner participation.</p>
+          </div>
+          <div class="button-row">
+            <button id="exportDepEdAnalysisBtn">Export Item Analysis Excel</button>
+          </div>
+        </div>
+
+        <div class="analysis-kpis report-kpis">
+          <div class="stat-card"><span>Total Takers</span><b id="rTakers">0</b></div>
+          <div class="stat-card"><span>Mean Score</span><b id="rMean">0</b></div>
+          <div class="stat-card"><span>MPS</span><b id="rMps">0%</b></div>
+          <div class="stat-card"><span>≥ 75% MPL</span><b id="rMpl">0</b></div>
+          <div class="stat-card"><span>Highest / Lowest</span><b id="rHighLow">0 / 0</b></div>
+        </div>
+
+        <article class="card">
+          <div class="card-title-row">
+            <div>
+              <h3>Item Analysis by Section</h3>
+              <p>Correct responses and rank per item, with total correct, overall rank, and percentage of correct response.</p>
+            </div>
+          </div>
+          <div class="table-wrap tall report-wide-table">
+            <table id="reportItemTable">
+              <thead id="reportItemHead"></thead>
+              <tbody id="reportItemBody"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-title-row">
+            <div>
+              <h3>Section Summary</h3>
+              <p>Enrollment, takers, non-takers, Mean, MPS, PL, 75% MPL attainment, and highest/lowest scores.</p>
+            </div>
+          </div>
+          <div class="table-wrap report-wide-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Section</th>
+                  <th>Students M</th><th>Students F</th><th>Total Students</th>
+                  <th>Takers M</th><th>Takers F</th><th>Total Takers</th>
+                  <th>Did Not Take</th><th>Mean</th><th>MPS</th><th>PL</th>
+                  <th>≥75% M</th><th>≥75% F</th><th>≥75% Total</th><th>≥75%</th>
+                  <th>&lt;75% M</th><th>&lt;75% F</th><th>&lt;75% Total</th><th>&lt;75%</th>
+                  <th>HS</th><th>LS</th>
+                </tr>
+              </thead>
+              <tbody id="reportSectionBody"></tbody>
+            </table>
+          </div>
+          <div id="reportSexNote" class="hint hide">Sex breakdown is available when the LEARNERS sheet contains Sex = M or F.</div>
         </article>
       </section>
 
