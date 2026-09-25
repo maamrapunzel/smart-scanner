@@ -155,19 +155,19 @@ function validateAssessment(a){
 }
 function mcqLabels(){ return Number(assessment?.info?.['MCQ Choices']||4)===5?['A','B','C','D','E']:['A','B','C','D']; }
 
-const SHEET_CONTENT_TOP_MM = 55;
-const SHEET_CONTENT_BOTTOM_MM = 268;
+const SHEET_CONTENT_TOP_MM = 52;
+const SHEET_CONTENT_BOTTOM_MM = 272;
 const SHEET_CONTENT_X_MM = 17;
 const SHEET_CONTENT_W_MM = 176;
-const SHEET_BLOCK_GAP_MM = 2.6;
+const SHEET_BLOCK_GAP_MM = 2.2;
 const SHEET_HALF_GAP_MM = 3;
 const SHEET_HALF_W_MM = (SHEET_CONTENT_W_MM-SHEET_HALF_GAP_MM)/2;
-const SHEET_BLOCK_HEAD_H_MM = 6.2;
+const SHEET_BLOCK_HEAD_H_MM = 6.8;
 
-const BASIC_ROW_H_MM = 5.35;
-const BOX_ROW_H_MM = 6.8;
-const NUMERIC_ROW_TOP_MM = 3.0;
-const NUMERIC_ROW_GAP_MM = 3.55;
+const BASIC_ROW_H_MM = 6.5;
+const BOX_ROW_H_MM = 8.0;
+const NUMERIC_ROW_TOP_MM = 3.4;
+const NUMERIC_ROW_GAP_MM = 4.2;
 
 const REGISTRATION_MARKS_MM = [
   [10,58],[200,58],
@@ -210,7 +210,7 @@ function tfBubbleXOffsets(width){
 function numericSignXOffset(){ return 7.5; }
 function numericDigitBubbleXOffsets(width){
   const start=12.3,end=Math.max(start+27,width-3.7);
-  const step=Math.min(3.45,(end-start)/9);
+  const step=Math.min(4.4,(end-start)/9);
   return Array.from({length:10},(_,i)=>start+i*step);
 }
 function sheetItemHeight(kind,it){
@@ -246,17 +246,19 @@ function groupLongestAnswer(group){
 }
 function sectionInnerColumns(group,width){
   const n=group.items.length;
-  let minSub=42,maxCap=4,targetPerCol=12;
+  let minSub=48,maxCap=4,targetPerCol=9;
   if(group.key==='MCQ'){
-    minSub=mcqLabels().length===5?41:36; maxCap=4; targetPerCol=13;
+    minSub=mcqLabels().length===5?54:42;
+    maxCap=mcqLabels().length===5?3:4;
+    targetPerCol=9;
   }else if(group.key==='TF'){
-    minSub=29; maxCap=4; targetPerCol=14;
+    minSub=38; maxCap=4; targetPerCol=8;
   }else if(group.key==='WRITTEN'){
     const longest=groupLongestAnswer(group);
-    minSub=longest>12?78:longest>8?57:40;
-    maxCap=4; targetPerCol=12;
+    minSub=longest>12?78:longest>8?62:48;
+    maxCap=3; targetPerCol=7;
   }else if(group.key==='NUMERIC'){
-    minSub=41; maxCap=4; targetPerCol=12;
+    minSub=58; maxCap=3; targetPerCol=3;
   }
   const maxCols=Math.max(1,Math.min(maxCap,Math.floor(width/minSub)));
   return clamp(Math.ceil(n/targetPerCol),1,maxCols);
@@ -352,8 +354,6 @@ function buildSectionedLayoutPages(){
   if(!assessment) return [];
   const groups=sheetBlockGroups();
   if(!groups.length) return [];
-  const paired=buildSinglePageStrategy(groups,'pairs');
-  if(paired) return [paired];
   const full=buildSinglePageStrategy(groups,'full');
   if(full) return [full];
   return buildFallbackPages(groups);
