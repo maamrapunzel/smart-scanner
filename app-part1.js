@@ -156,7 +156,7 @@ function validateAssessment(a){
 function mcqLabels(){ return Number(assessment?.info?.['MCQ Choices']||4)===5?['A','B','C','D','E']:['A','B','C','D']; }
 
 const SHEET_CONTENT_TOP_MM = 31;
-const SHEET_CONTENT_BOTTOM_MM = 194;
+const SHEET_CONTENT_BOTTOM_MM = 195.5;
 const SHEET_CONTENT_X_MM = 8.5;
 const SHEET_CONTENT_W_MM = 131;
 const SHEET_BLOCK_GAP_MM = 2;
