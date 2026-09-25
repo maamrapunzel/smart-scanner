@@ -78,8 +78,12 @@ function calibratePage(img){
   const cornerImg=[markers.tl,markers.tr,markers.br,markers.bl];
   let H=homographyFromPointPairs(cornerMm,cornerImg);
 
-  const horizontal=(pointDistance(markers.tl,markers.tr)+pointDistance(markers.bl,markers.br))/2/190;
-  const vertical=(pointDistance(markers.tl,markers.bl)+pointDistance(markers.tr,markers.br))/2/277;
+  const topMm=Math.hypot(MARKER_MM.tr[0]-MARKER_MM.tl[0],MARKER_MM.tr[1]-MARKER_MM.tl[1]);
+  const bottomMm=Math.hypot(MARKER_MM.br[0]-MARKER_MM.bl[0],MARKER_MM.br[1]-MARKER_MM.bl[1]);
+  const leftMm=Math.hypot(MARKER_MM.bl[0]-MARKER_MM.tl[0],MARKER_MM.bl[1]-MARKER_MM.tl[1]);
+  const rightMm=Math.hypot(MARKER_MM.br[0]-MARKER_MM.tr[0],MARKER_MM.br[1]-MARKER_MM.tr[1]);
+  const horizontal=((pointDistance(markers.tl,markers.tr)/topMm)+(pointDistance(markers.bl,markers.br)/bottomMm))/2;
+  const vertical=((pointDistance(markers.tl,markers.bl)/leftMm)+(pointDistance(markers.tr,markers.br)/rightMm))/2;
   const pxPerMm=(horizontal+vertical)/2;
   const I=darkIntegral(img,85),foundMm=[],foundImg=[];
 
