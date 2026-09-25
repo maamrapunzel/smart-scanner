@@ -149,7 +149,7 @@ function buildAnswerPage(learner,pageNo,totalPages,layoutPage){
   const totalPoints=assessment.items.reduce((sum,it)=>sum+(Number(it.points)||0),0);
   const sectionHtml=layoutPage.sections.map(buildSectionBlock).join('');
   const registrationHtml=REGISTRATION_MARKS_MM.map(([x,y])=>`<span class="registration-marker" style="left:${x-1.5}mm;top:${y-1.5}mm"></span>`).join('');
-  return `<section class="answer-page block-answer-sheet compact-50-sheet">
+  return `<section class="answer-page block-answer-sheet compact-50-sheet ${layoutPage.fixedTemplate?'fixed-a5-template':'fallback-a5-template'}">
     <div class="marker m-tl"></div><div class="marker m-tr"></div><div class="marker m-bl"></div><div class="marker m-br"></div>
     ${registrationHtml}
 
@@ -182,8 +182,10 @@ function buildAnswerPage(learner,pageNo,totalPages,layoutPage){
 }
 function buildSectionBlock(sec){
   const cont=sec.continuation?' (cont.)':'';
+  const nums=(sec.items||[]).map(x=>Number(x.it?.no)).filter(Number.isFinite);
+  const range=nums.length?` (Items ${Math.min(...nums)}–${Math.max(...nums)})`:'';
   const head=`<div class="answer-block-head" style="left:${sec.x}mm;top:${sec.y}mm;width:${sec.width}mm">
-    <b>${sec.letter}. ${escapeHtml(sec.title)}${cont}</b>
+    <b>${sec.letter}. ${escapeHtml(sec.title)}${range}${cont}</b>
     <span>${escapeHtml(sec.instruction)}</span>
   </div>`;
   const outline=`<div class="answer-block-outline" style="left:${sec.x}mm;top:${sec.y}mm;width:${sec.width}mm;height:${SHEET_BLOCK_HEAD_H_MM+sec.bodyHeight}mm"></div>`;
@@ -197,7 +199,7 @@ function boxCountForItem(it){
   return boxCountForSheetItem(it);
 }
 function characterBoxesHtml(it,layout){
-  const count=boxCountForItem(it);
+  const count=Math.max(7,boxCountForItem(it));
   const left=10.5;
   const available=Math.max(12,layout.width-left-2.5);
   const gap=count>10?.28:.42;
@@ -208,14 +210,14 @@ function buildSectionedItem(layout){
   const it=layout.it;
   if(layout.kind==='MCQ'){
     const labels=mcqLabels(),xs=mcqBubbleXOffsets(layout.width);
-    const bubbles=labels.map((lab,j)=>`<span class="block-bubble" style="left:${xs[j]-1.85}mm">${lab}</span>`).join('');
+    const bubbles=labels.map((lab,j)=>`<span class="block-bubble" style="left:${xs[j]-2.2}mm">${lab}</span>`).join('');
     return `<div class="block-sheet-row" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm;height:${layout.height}mm">
       <span class="block-item-no">${it.no}.</span>${bubbles}
     </div>`;
   }
   if(layout.kind==='TF'){
     const xs=tfBubbleXOffsets(layout.width);
-    const bubbles=['T','F'].map((lab,j)=>`<span class="block-bubble" style="left:${xs[j]-1.85}mm">${lab}</span>`).join('');
+    const bubbles=['T','F'].map((lab,j)=>`<span class="block-bubble" style="left:${xs[j]-2.2}mm">${lab}</span>`).join('');
     return `<div class="block-sheet-row" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm;height:${layout.height}mm">
       <span class="block-item-no">${it.no}.</span>${bubbles}
     </div>`;
@@ -233,7 +235,7 @@ function buildNumericBubbleItem(layout){
   const sign=`<span class="numeric-sign-bubble" style="left:${signX-2.05}mm;top:${signY-2.05}mm">−</span>`;
   const rows=Array.from({length:spec.digits},(_,digitIndex)=>{
     const y=NUMERIC_ROW_TOP_MM+digitIndex*NUMERIC_ROW_GAP_MM;
-    const bubbles=Array.from({length:10},(_,n)=>`<span class="numeric-h-bubble" style="left:${xs[n]-1.4}mm;top:${y-1.4}mm">${n}</span>`).join('');
+    const bubbles=Array.from({length:10},(_,n)=>`<span class="numeric-h-bubble" style="left:${xs[n]-2.05}mm;top:${y-2.05}mm">${n}</span>`).join('');
     return bubbles;
   }).join('');
   return `<div class="numeric-horizontal-item" style="left:${layout.x}mm;top:${layout.y}mm;width:${layout.width}mm;height:${layout.height}mm">
