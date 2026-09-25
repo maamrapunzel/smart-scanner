@@ -1,5 +1,6 @@
 (function(){
-  const parts=['app-part1.js','app-part2.js','app-part3.js','app-part4.js','app-part5.js','app-part6.js'];
+  const APP_BUILD='21';
+  const parts=['app-part1.js','app-part2.js','app-part3.js','app-part4.js','app-part5.js','app-part6.js'].map(x=>x+'?v='+APP_BUILD);
 
   function makeMasterTemplate(){
     if(typeof XLSX==='undefined'){
