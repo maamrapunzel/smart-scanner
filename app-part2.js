@@ -55,9 +55,9 @@ function layoutCapacity(layout){
 }
 function updateSheetLayoutHint(){
   const layout=currentSheetLayout(),el=$('sheetLayoutHint'); if(!el) return;
-  if(layout==='full') el.innerHTML='Full A4 gives the <b>best scan accuracy</b>. Print at 100% / Actual Size and keep all four black corner markers visible.';
-  else if(layout==='2up') el.innerHTML='<b>2-up:</b> two answer sheets per A4 landscape page. Cut the mini sheets apart before scanning. For best results, fill the camera frame with only one mini sheet.';
-  else el.innerHTML='<b>4-up:</b> four answer sheets per A4 portrait page. This saves paper but makes QR, bubbles, and markers smaller. Cut the mini sheets apart before scanning; Full A4 remains the most reliable mode.';
+  if(layout==='full') el.innerHTML='<b>A5 Single:</b> one full-size A5 answer sheet per learner. This gives the largest bubbles and answer boxes. Print at 100% / Actual Size and keep every black registration square visible.';
+  else if(layout==='2up') el.innerHTML='<b>2-up:</b> two full-size A5 answer sheets on one A4 landscape page. Cut them apart before scanning.';
+  else el.innerHTML='<b>4-up:</b> four reduced A5 sheets on one A4 portrait page. This is paper-saving but smaller; A5 Single or 2-up A4 is recommended for 50-item tests.';
 }
 function refreshSheetLearners(){
   const sel=$('sheetLearnerSelect'); if(!sel) return;
@@ -101,7 +101,7 @@ function renderAnswerSheets(mode='selected'){
 function setDynamicPrintPage(layout){
   let el=$('dynamicPrintPageStyle');
   if(!el){ el=document.createElement('style'); el.id='dynamicPrintPageStyle'; document.head.appendChild(el); }
-  el.textContent=layout==='2up'?'@page{size:A4 landscape;margin:0}':'@page{size:A4 portrait;margin:0}';
+  el.textContent=layout==='full'?'@page{size:A5 portrait;margin:0}':(layout==='2up'?'@page{size:A4 landscape;margin:0}':'@page{size:A4 portrait;margin:0}');
 }
 function printAnswerSheets(mode){
   if(!assessment) return alert('Upload a Master Excel first.');
@@ -148,7 +148,7 @@ function buildAnswerPage(learner,pageNo,totalPages,layoutPage){
   const qrText=learner.generic?'':`SS2|${assessment.id}|${encodeURIComponent(key)}|${pageNo}`;
   const totalPoints=assessment.items.reduce((sum,it)=>sum+(Number(it.points)||0),0);
   const sectionHtml=layoutPage.sections.map(buildSectionBlock).join('');
-  const registrationHtml=REGISTRATION_MARKS_MM.map(([x,y])=>`<span class="registration-marker" style="left:${x-1.65}mm;top:${y-1.65}mm"></span>`).join('');
+  const registrationHtml=REGISTRATION_MARKS_MM.map(([x,y])=>`<span class="registration-marker" style="left:${x-1.5}mm;top:${y-1.5}mm"></span>`).join('');
   return `<section class="answer-page block-answer-sheet compact-50-sheet">
     <div class="marker m-tl"></div><div class="marker m-tr"></div><div class="marker m-bl"></div><div class="marker m-br"></div>
     ${registrationHtml}
@@ -201,7 +201,7 @@ function characterBoxesHtml(it,layout){
   const left=10.5;
   const available=Math.max(12,layout.width-left-2.5);
   const gap=count>10?.28:.42;
-  const size=clamp((available-gap*(count-1))/count,2.35,4.75);
+  const size=clamp((available-gap*(count-1))/count,2.8,5.8);
   return `<span class="block-char-boxes" style="left:${left}mm;top:.65mm;gap:${gap}mm">${Array.from({length:count},()=>`<span class="block-char-box" style="width:${size}mm;height:${size}mm"></span>`).join('')}</span>`;
 }
 function buildSectionedItem(layout){
@@ -230,7 +230,7 @@ function buildNumericBubbleItem(layout){
   const signX=numericSignXOffset();
   const xs=numericDigitBubbleXOffsets(layout.width);
   const signY=NUMERIC_ROW_TOP_MM;
-  const sign=`<span class="numeric-sign-bubble" style="left:${signX-1.4}mm;top:${signY-1.4}mm">−</span>`;
+  const sign=`<span class="numeric-sign-bubble" style="left:${signX-2.05}mm;top:${signY-2.05}mm">−</span>`;
   const rows=Array.from({length:spec.digits},(_,digitIndex)=>{
     const y=NUMERIC_ROW_TOP_MM+digitIndex*NUMERIC_ROW_GAP_MM;
     const bubbles=Array.from({length:10},(_,n)=>`<span class="numeric-h-bubble" style="left:${xs[n]-1.4}mm;top:${y-1.4}mm">${n}</span>`).join('');
