@@ -51,6 +51,7 @@ function showScreen(id){
   if(id==='scanner') refreshScannerControls();
   if(id==='results') renderResults();
   if(id==='analysis') renderAnalysis();
+  if(id==='reports' && typeof renderReports==='function') renderReports();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function updateNetwork(){
@@ -119,14 +120,23 @@ function parseWorkbook(wb,fileName){
   if(wb.Sheets['LEARNERS']){
     const lr=rowsFromSheet(wb,['LEARNERS']);
     const lh=(lr[0]||[]).map(x=>String(x).trim()); const li=n=>lh.indexOf(n);
+    const idCol=li('LRN / ID')>=0?li('LRN / ID'):li('Learner ID / LRN');
+    const sexCol=li('Sex')>=0?li('Sex'):li('Gender');
     learners=lr.slice(1).map((r,k)=>({
       no:String(li('Learner No.')>=0?r[li('Learner No.')]:k+1).trim(),
-      id:String(li('LRN / ID')>=0?r[li('LRN / ID')]:'').trim(),
+      id:String(idCol>=0?r[idCol]:'').trim(),
       name:String(li('Learner Name')>=0?r[li('Learner Name')]:'').trim(),
+      sex:normalizeLearnerSex(sexCol>=0?r[sexCol]:''),
       section:String(li('Section')>=0?r[li('Section')]:(info['Section']||'')).trim()
     })).filter(x=>x.name);
   }
   return {fileName,info,items,learners,loadedAt:new Date().toISOString()};
+}
+function normalizeLearnerSex(v){
+  const s=String(v??'').trim().toUpperCase();
+  if(['M','MALE','BOY'].includes(s)) return 'M';
+  if(['F','FEMALE','GIRL'].includes(s)) return 'F';
+  return '';
 }
 function normalizeType(v){
   const s=String(v||'').trim().toUpperCase().replace(/\s+/g,' ');
