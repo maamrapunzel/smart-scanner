@@ -161,8 +161,8 @@ const SHEET_CONTENT_X_MM = 8.5;
 const SHEET_CONTENT_W_MM = 131;
 const SHEET_BLOCK_HEAD_H_MM = 6.2;
 
-const NUMERIC_ROW_TOP_MM = 2.5;
-const NUMERIC_ROW_GAP_MM = 4.3;
+window.NUMERIC_ROW_TOP_MM = 2.5;
+window.NUMERIC_ROW_GAP_MM = 4.3;
 
 const REGISTRATION_MARKS_MM = [
   [4.5,30],[143.5,30],
@@ -220,7 +220,7 @@ function numericDigitBubbleXOffsets(width){
 function fixedNumericItemHeight(it){
   const spec=numericBubbleSpec(it);
   if(!spec.auto) return 7;
-  return 5+(spec.digits-1)*NUMERIC_ROW_GAP_MM;
+  return 5+(spec.digits-1)*window.NUMERIC_ROW_GAP_MM;
 }
 function fixedSheetBuckets(){
   const buckets={MCQ:[],TF:[],NUMERIC:[],WRITTEN:[]};
