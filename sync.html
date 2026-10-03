@@ -42,6 +42,7 @@ details{border:1px solid var(--line);border-radius:12px;background:#fff;margin-t
     <div class="deviceLabel">Send the latest assessment</div>
     <div id="packageSummary" class="summary"></div>
     <button class="btn primary bigAction" onclick="syncNow()">☁ Sync Now</button>
+    <button class="btn green bigAction" style="margin-top:8px" onclick="getResultsFromPhone()">↓ Get Scan Results from Phone</button>
     <div id="sendStatus" class="status hidden"></div>
 
     <div id="laptopPairState" class="pairState">
@@ -80,6 +81,7 @@ details{border:1px solid var(--line);border-radius:12px;background:#fff;margin-t
     </div>
 
     <button id="pullBtn" class="btn green bigAction" onclick="syncFromLaptop()">↓ Sync from Laptop</button>
+    <button class="btn blue bigAction" style="margin-top:8px" onclick="sendResultsToLaptop()">↑ Send Scan Results to Laptop</button>
     <div id="receiveStatus" class="status hidden"></div>
     <div id="receivedSummary" class="summary hidden"></div>
     <div id="openScannerBox" class="actions"><a class="btn primary" href="./scanner.html">Open Scanner →</a></div>
@@ -118,6 +120,7 @@ const PAIR_KEY='smartScannerPairId';
 const SHEET_KEY='smartScannerAnswerSheetDraft';
 const CURRENT_KEY='smartScannerCurrentAnswerKey';
 const KEY_REG='smartScannerAnswerKeys';
+const SCAN_REG='smartScannerScans';
 const LAST_PUSH_KEY='smartScannerLastPushAt';
 const LAST_PULL_KEY='smartScannerLastPullAt';
 let lastPhoneLink='';
@@ -128,6 +131,11 @@ function show(el,text,kind=''){el.textContent=text;el.className='status '+kind;e
 function normalizeEndpoint(v){return String(v||'').trim().replace(/\/+$/,'')}
 function endpointValue(){return normalizeEndpoint(endpoint.value||localStorage.getItem(ENDPOINT_KEY)||DEFAULT_ENDPOINT)}
 function pairId(){return String(localStorage.getItem(PAIR_KEY)||'').toUpperCase()}
+function resultCode(){
+ const src=pairId(),chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+ if(!/^[A-Z0-9]{8}$/.test(src))return '';
+ return [...src].map(ch=>chars[(chars.indexOf(ch)+11)%chars.length]).join('');
+}
 
 function saveEndpoint(){
  const v=normalizeEndpoint(endpoint.value);
@@ -320,6 +328,40 @@ async function copyPhoneLink(){
  if(!lastPhoneLink)return;
  try{await navigator.clipboard.writeText(lastPhoneLink);show(sendStatus,'Pairing link copied. Open it on the phone once.','ok')}
  catch(e){show(sendStatus,'Could not copy automatically. Long-press the pairing link and copy it.','warn')}
+}
+
+async function sendResultsToLaptop(){
+ const ep=endpointValue(),code=resultCode();
+ if(!ep||!code){show(receiveStatus,'This phone is not paired yet.','bad');return}
+ const scans=parse(localStorage.getItem(SCAN_REG),[]);
+ if(!Array.isArray(scans)||!scans.length){show(receiveStatus,'No saved scan results on this phone yet.','warn');return}
+ show(receiveStatus,'Sending '+scans.length+' scan result'+(scans.length===1?'':'s')+' to laptop…','warn');
+ try{
+   const payload={kind:'scanResults',version:1,updatedAt:new Date().toISOString(),scans};
+   await fetch(ep,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'put',code,payload})});
+   await new Promise(r=>setTimeout(r,850));
+   const verify=await jsonp(ep+'?action=get&code='+encodeURIComponent(code));
+   if(!verify?.ok||verify.payload?.kind!=='scanResults')throw new Error(verify?.error||'Result upload could not be verified.');
+   show(receiveStatus,'Sent successfully. On the laptop, click “Get Scan Results from Phone”.','ok');
+ }catch(e){show(receiveStatus,'Could not send results: '+e.message,'bad')}
+}
+
+async function getResultsFromPhone(){
+ const ep=endpointValue(),code=resultCode();
+ if(!ep||!code){show(sendStatus,'Pair the phone first.','bad');return}
+ show(sendStatus,'Getting scan results from phone…','warn');
+ try{
+   const data=await jsonp(ep+'?action=get&code='+encodeURIComponent(code));
+   if(!data?.ok)throw new Error(data?.error||'No phone scan results found yet.');
+   if(data.payload?.kind!=='scanResults'||!Array.isArray(data.payload.scans))throw new Error('The result package is invalid.');
+   const incoming=data.payload.scans;
+   let local=parse(localStorage.getItem(SCAN_REG),[]);if(!Array.isArray(local))local=[];
+   const map=new Map(local.map(x=>[x.scanId,x]));
+   incoming.forEach(x=>{if(x&&x.scanId)map.set(x.scanId,x)});
+   local=[...map.values()].sort((a,b)=>String(a.capturedAt||'').localeCompare(String(b.capturedAt||'')));
+   localStorage.setItem(SCAN_REG,JSON.stringify(local));
+   show(sendStatus,'Received '+incoming.length+' scan result'+(incoming.length===1?'':'s')+'. Item Analysis is ready on this laptop.','ok');
+ }catch(e){show(sendStatus,'Could not get results: '+e.message,'bad')}
 }
 
 async function syncFromLaptop(){
