@@ -434,10 +434,10 @@ body.print-batch .printSlot.empty{outline:none}
 <input id="learnerExcel" type="file" accept=".xlsx,.xls" hidden>
 </label>
 </div>
-<div id="importStatus" class="help">Download the learner template, fill in the names and Grade & Section, then import it back here. Student ID is optional. The importer can also recognize common Name, Grade/Section, and LRN/Student ID headers from other Excel lists.</div>
+<div id="importStatus" class="help">Download the learner template, fill in the names, Sex, and Grade & Section, then import it back here. Student ID is optional. The importer can also recognize common Name, Sex/Gender, Grade/Section, and LRN/Student ID headers from other Excel lists.</div>
 <label>Or Paste Learners</label>
-<textarea id="learnerList" rows="7" placeholder="Juan Dela Cruz | Grade 8 - Acacia |&#10;Maria Santos | Grade 8 - Acacia |"></textarea>
-<div class="help">Format: Name | Grade & Section | Student ID. Student ID may be left blank.</div>
+<textarea id="learnerList" rows="7" placeholder="Juan Dela Cruz | Male | Grade 8 - Acacia |&#10;Maria Santos | Female | Grade 8 - Acacia |"></textarea>
+<div class="help">Format: Name | Sex | Grade & Section | Student ID. Use Male/Female or M/F. Student ID may be left blank.</div>
 </div>
 </div>
 
@@ -531,7 +531,12 @@ function collect(){
  state.name=document.getElementById('sheetName').value.trim();
  state.mode=document.querySelector('input[name=mode]:checked')?.value||'blank';
  state.includeId=includeId.checked; state.idDigits=Number(idDigits.value); state.idLabel=idLabel.value.trim()||'Student ID';
- state.learners=learnerList.value.split(/\n+/).map(x=>x.trim()).filter(Boolean).map(line=>{let p=line.split('|').map(x=>x.trim());return{name:p[0]||'',section:p[1]||'',id:p[2]||''}});
+ state.learners=learnerList.value.split(/\n+/).map(x=>x.trim()).filter(Boolean).map(line=>{
+ let p=line.split('|').map(x=>x.trim()),sex='',section='',id='';
+ if(/^(m|male|f|female)$/i.test(p[1]||'')){sex=normalizeSex(p[1]);section=p[2]||'';id=p[3]||''}
+ else{section=p[1]||'';id=p[2]||''}
+ return{name:p[0]||'',sex,section,id};
+});
  document.querySelectorAll('#headerRows tr').forEach((tr,i)=>{state.headers[i].enabled=tr.querySelector('.h-enabled').checked;state.headers[i].label=tr.querySelector('.h-label').value;state.headers[i].width=tr.querySelector('.h-width').value});
  saveDraft();
 }
@@ -541,7 +546,7 @@ function init(){
  loadDraft(); state.questions=(state.questions||[]).map(q=>q.type==='coord'?{...q,format:'pairLocation'}:q.type==='num'&&!q.entryMode?{...q,entryMode:'character'}:q); sheetName.value=state.name||''; renderHeaderRows();
  document.querySelectorAll('input[name=mode]').forEach(r=>r.checked=r.value===state.mode);
  includeId.checked=!!state.includeId;idDigits.value=state.idDigits||5;idLabel.value=state.idLabel||'Student ID';
- learnerList.value=(state.learners||[]).map(x=>x.name+(x.section?' | '+x.section:'')+(x.id?' | '+x.id:' |')).join('\n');
+ learnerList.value=(state.learners||[]).map(x=>x.name+' | '+(x.sex||'')+' | '+(x.section||'')+' | '+(x.id||'')).join('\n');
  if(window.learnerExcel)learnerExcel.addEventListener('change',importLearnersExcel);
  syncStudentOptions();renderQuestions();showStep(1);
 }
@@ -554,6 +559,12 @@ function syncStudentOptions(){
 }
 includeId.addEventListener('change',syncStudentOptions);document.querySelectorAll('input[name=mode]').forEach(x=>x.addEventListener('change',syncStudentOptions));
 function normHeader(v){return String(v??'').trim().toLowerCase().replace(/[._-]+/g,' ').replace(/\s+/g,' ')}
+function normalizeSex(v){
+ const s=String(v??'').trim().toLowerCase();
+ if(s==='m'||s==='male')return 'Male';
+ if(s==='f'||s==='female')return 'Female';
+ return String(v??'').trim();
+}
 function findHeaderIndex(headers,candidates){
  const hs=headers.map(normHeader);
  for(const cand of candidates){const i=hs.indexOf(cand);if(i>=0)return i}
@@ -563,10 +574,10 @@ function findHeaderIndex(headers,candidates){
 function downloadLearnerTemplate(){
  if(typeof XLSX==='undefined'){alert('Excel library is not ready yet. Please refresh the page and try again.');return}
  const wb=XLSX.utils.book_new();
- const rows=[['No.','Learner Name','Grade & Section','Student ID (Optional)']];
- for(let i=1;i<=50;i++)rows.push([i,'','','']);
+ const rows=[['No.','Learner Name','Sex','Grade & Section','Student ID (Optional)']];
+ for(let i=1;i<=50;i++)rows.push([i,'','','','']);
  const ws=XLSX.utils.aoa_to_sheet(rows);
- ws['!cols']=[{wch:7},{wch:34},{wch:28},{wch:22}];
+ ws['!cols']=[{wch:7},{wch:34},{wch:12},{wch:28},{wch:22}];
  XLSX.utils.book_append_sheet(wb,ws,'LEARNERS');
 
  const guide=[
@@ -574,6 +585,7 @@ function downloadLearnerTemplate(){
   ['Column','What to enter'],
   ['No.','Optional sequence number.'],
   ['Learner Name','Required. Enter the learner’s full name.'],
+  ['Sex','Enter Male/Female or M/F. Used for sex-disaggregated Passed/Failed counts in Item Analysis.'],
   ['Grade & Section','Recommended. Example: Grade 8 - Acacia.'],
   ['Student ID (Optional)','Optional. Leave blank if you do not use Student ID.'],
   ['Important','Do not rename the LEARNERS sheet headers if you want the easiest import.']
@@ -596,6 +608,7 @@ async function importLearnersExcel(ev){
    const lastCandidates=['last name','lastname','surname'];
    const sectionCandidates=['grade & section','grade and section','grade level & section','grade level and section','grade/section','section'];
    const gradeCandidates=['grade level','grade'];
+   const sexCandidates=['sex','gender','learner sex','student sex'];
    const idCandidates=['lrn','student id','learner id','id no','id number','id'];
    let headerRow=-1;
    for(let r=0;r<Math.min(rows.length,25);r++){
@@ -606,7 +619,7 @@ async function importLearnersExcel(ev){
    const headers=rows[headerRow];
    const nameI=findHeaderIndex(headers,nameCandidates);
    const firstI=findHeaderIndex(headers,firstCandidates), middleI=findHeaderIndex(headers,middleCandidates), lastI=findHeaderIndex(headers,lastCandidates);
-   const secI=findHeaderIndex(headers,sectionCandidates), gradeI=findHeaderIndex(headers,gradeCandidates), idI=findHeaderIndex(headers,idCandidates);
+   const secI=findHeaderIndex(headers,sectionCandidates), gradeI=findHeaderIndex(headers,gradeCandidates), sexI=findHeaderIndex(headers,sexCandidates), idI=findHeaderIndex(headers,idCandidates);
    const imported=[];
    for(let r=headerRow+1;r<rows.length;r++){
      const row=rows[r];
@@ -618,13 +631,14 @@ async function importLearnersExcel(ev){
      const grade=gradeI>=0?String(row[gradeI]??'').trim():'';
      if(grade && section && !section.toLowerCase().includes(grade.toLowerCase()))section=grade+' - '+section;
      else if(grade && !section)section=grade;
+     const sex=sexI>=0?normalizeSex(row[sexI]):'';
      const id=idI>=0?String(row[idI]??'').trim():'';
-     imported.push({name,section,id});
+     imported.push({name,sex,section,id});
    }
    if(!imported.length)throw new Error('No learner rows found.');
    state.learners=imported; state.mode='personalized';
    document.querySelector('input[name=mode][value=personalized]').checked=true;
-   learnerList.value=imported.map(x=>x.name+' | '+(x.section||'')+' | '+(x.id||'')).join('\n');
+   learnerList.value=imported.map(x=>x.name+' | '+(x.sex||'')+' | '+(x.section||'')+' | '+(x.id||'')).join('\n');
    syncStudentOptions(); saveDraft();
    importStatus.innerHTML='<b>'+imported.length+' learners imported</b> from '+esc(file.name)+'.';
    if(state.step===5){buildPreviewLearners();renderPreview()}
