@@ -423,7 +423,7 @@ function openModal(type){
  <label>Number of Questions</label><select id="mCount">${Array.from({length:50},(_,i)=>`<option>${i+1}</option>`).join('')}</select>
  <label>Answer Labels</label><input id="mLabels" class="field" value="ABCD" maxlength="10"><div class="help">Enter labels without spaces, e.g. ABCD, ABCDE, or TF.</div>`;}
  if(type==='tf'){title='Add True / False questions';body=`<label>Number of Questions</label><select id="mCount">${Array.from({length:50},(_,i)=>`<option>${i+1}</option>`).join('')}</select><label>Answer Labels</label><input id="mLabels" class="field" value="TF" maxlength="4">`;}
- if(type==='word'){title='Add word / text questions';body=`<label>Number of Questions</label><select id="mCount">${Array.from({length:20},(_,i)=>`<option>${i+1}</option>`).join('')}</select><label>Number of Character Boxes</label><select id="mBoxes">${Array.from({length:10},(_,i)=>`<option>${i+3}</option>`).join('')}</select><div class="help">Students write one letter/character in each box.</div>`;}
+ if(type==='word'){title='Add word / text questions';body=`<label>Number of Questions</label><select id="mCount">${Array.from({length:20},(_,i)=>`<option>${i+1}</option>`).join('')}</select><label>Number of Character Boxes</label><select id="mBoxes">${Array.from({length:12},(_,i)=>`<option ${i===0?'selected':''}>${i+1}</option>`).join('')}</select><div class="help">Use 1 box for matching-type answers (E, F, G, H, etc.), or more boxes for short words/text.</div>`;}
  if(type==='num'){title='Add numerical entry questions';body=`
  <label>Number of Questions</label><select id="mCount">${Array.from({length:20},(_,i)=>`<option>${i+1}</option>`).join('')}</select>
  <div class="grid2"><div><label>Number of Digits / Boxes</label><select id="mBoxes">${Array.from({length:9},(_,i)=>`<option>${i+2}</option>`).join('')}</select></div><div><label>Has Negative Sign?</label><select id="mNeg"><option>No</option><option>Yes</option></select></div></div>
@@ -436,7 +436,7 @@ function addQuestions(){
  const count=Number(document.getElementById('mCount')?.value||1);
  for(let i=0;i<count;i++){
   if(modalType==='mcq'||modalType==='tf')state.questions.push({type:modalType,labels:(document.getElementById('mLabels').value||'ABCD').replace(/\s+/g,'').toUpperCase().slice(0,10)});
-  if(modalType==='word')state.questions.push({type:'word',boxes:Number(document.getElementById('mBoxes').value||6)});
+  if(modalType==='word')state.questions.push({type:'word',boxes:Number(document.getElementById('mBoxes').value||1)});
   if(modalType==='num')state.questions.push({type:'num',boxes:Number(document.getElementById('mBoxes').value||4),neg:mNeg.value==='Yes',dec:mDec.value==='Yes',frac:mFrac.value==='Yes',sci:mSci.value==='Yes'});
  }
  saveDraft();closeModal();renderQuestions();
