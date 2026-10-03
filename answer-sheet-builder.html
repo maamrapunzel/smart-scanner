@@ -475,7 +475,7 @@ body.print-batch .printSlot.empty{outline:none}
 <button class="btn primary" onclick="printAllLearners()">Print All</button>
 <button class="btn green" onclick="downloadPNG()">Download PNG</button>
 <button class="btn blue" onclick="downloadPDF()">Download PDF</button>
-<a class="btn primary" href="./answer-key-builder.html" style="text-decoration:none">Create Answer Key →</a>
+
 </div>
 <div class="help" style="margin:0 0 10px">Print the current learner or all personalized learners. A4 = 1-up, A5 = 2-up per A4 page, A6 = 4-up per A4 page. PNG/PDF exports use the current preview.</div>
 <div class="paperWrap"><div id="paperHost"></div></div>
@@ -483,6 +483,7 @@ body.print-batch .printSlot.empty{outline:none}
 
 </div>
 <div class="actions">
+<div id="finishHint" class="help" style="margin:0;align-self:center;display:none"><b>Answer Sheet complete.</b> Continue to set the correct answers.</div>
 <button id="backBtn" class="btn light" onclick="go(-1)">← Back</button>
 <button id="nextBtn" class="btn primary" onclick="go(1)">Next →</button>
 </div>
@@ -636,10 +637,16 @@ function go(dir){
  if(state.step===1&&dir>0&&!sheetName.value.trim()){sheetName.focus();alert('Please enter an Answer Sheet Name first.');return}
  collect();let n=Math.max(1,Math.min(5,state.step+dir));showStep(n);
 }
+function finishAnswerSheet(){
+ collect();
+ saveDraft();
+ window.location.href='./answer-key-builder.html';
+}
 function showStep(n){
  state.step=n;document.querySelectorAll('.stepPane').forEach(x=>x.classList.add('hidden'));document.getElementById('step'+n).classList.remove('hidden');
  document.querySelectorAll('.stepBtn').forEach(b=>{const s=Number(b.dataset.step);b.classList.toggle('active',s===n);b.classList.toggle('done',s<n)});
- stepTitle.textContent=titles[n][0];stepDesc.textContent=titles[n][1];backBtn.style.visibility=n===1?'hidden':'visible';nextBtn.textContent=n===5?'Done':'Next →';nextBtn.onclick=n===5?()=>alert('Answer Sheet setup saved in this browser.'):()=>go(1);
+ stepTitle.textContent=titles[n][0];stepDesc.textContent=titles[n][1];backBtn.style.visibility=n===1?'hidden':'visible';nextBtn.textContent=n===5?'Create Answer Key →':'Next →';nextBtn.onclick=n===5?finishAnswerSheet:()=>go(1);
+ finishHint.style.display=n===5?'block':'none';
  document.querySelectorAll('[data-sheet-label]').forEach(x=>x.textContent=state.name||'Untitled Sheet');
  if(n===4)renderQuestions();if(n===5){buildPreviewLearners();renderPreview()}
  window.scrollTo({top:0,behavior:'smooth'});
