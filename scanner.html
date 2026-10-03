@@ -100,7 +100,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 
 <canvas id="capture"></canvas>
 <canvas id="warp"></canvas>
-<iframe id="layoutFrame" src="./answer-sheet-builder.html?scanner-layout=3"></iframe>
+<iframe id="layoutFrame" src="./answer-sheet-builder.html?scanner-layout=4"></iframe>
 
 <script>
 const KEY_REG='smartScannerAnswerKeys';
@@ -285,6 +285,7 @@ async function analyzeLiveFrame(){
 function stopCameraTracks(){
  if(liveTimer){clearTimeout(liveTimer);liveTimer=null}
  if(mediaStream){mediaStream.getTracks().forEach(function(t){t.stop()});mediaStream=null}
+ liveBusy=false;
  liveVideo.pause();liveVideo.srcObject=null;liveVideo.style.display='none';liveBadge.style.display='none';
  startScanBtn.classList.remove('hidden');stopScanBtn.classList.add('hidden');
 }
@@ -511,7 +512,16 @@ function saveScan(){
  const scans=safeParse(localStorage.getItem(SCAN_REG),[]);scans.push(rec);localStorage.setItem(SCAN_REG,JSON.stringify(scans));localStorage.setItem('smartScannerCurrentScan',JSON.stringify(rec));
  saveStatus.className='status ok';saveStatus.textContent='Saved: '+learner.name+' • '+score+'/'+total;saveStatus.classList.remove('hidden');setTimeout(rescan,700);
 }
-function rescan(){currentScan=null;warpedImage=null;reviewCard.classList.add('hidden');saveCard.classList.add('hidden');alignedPreviewBox.classList.add('hidden');alignedPreview.removeAttribute('src');photoPreview.removeAttribute('src');photoPreview.style.display='none';photoPlaceholder.style.display='flex';setScanStatus('Ready for the next paper.','ok');window.scrollTo({top:0,behavior:'smooth'})}
+function rescan(){
+ stopLiveScanner(false);
+ currentScan=null;warpedImage=null;autoCaptureLocked=false;stableFrames=0;lastLivePts=null;liveBusy=false;
+ reviewCard.classList.add('hidden');saveCard.classList.add('hidden');alignedPreviewBox.classList.add('hidden');alignedPreview.removeAttribute('src');
+ photoPreview.removeAttribute('src');photoPreview.style.display='none';photoPlaceholder.style.display='flex';
+ setScanStatus('Ready for the next paper. Starting live scanner…','ok');
+ window.scrollTo({top:0,behavior:'smooth'});
+ setTimeout(function(){if(currentKey&&currentMap)openCamera()},300);
+}
+window.addEventListener('pagehide',function(){stopLiveScanner(false)});
 init();
 </script>
 </body>
