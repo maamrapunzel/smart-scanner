@@ -25,11 +25,11 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 </style>
 </head>
 <body>
-<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V4.7 • PAGE + READ TUNE</span></header>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V5 • HANDWRITING OCR</span></header>
 
 <main class="wrap">
  <div class="hero">
-  <div><h1>Scan Answer Sheet</h1><p>The scanner finds the four black registration blocks, straightens the page, then reads bubble responses. Handwritten boxes are cropped for review.</p></div>
+  <div><h1>Scan Answer Sheet</h1><p>The scanner straightens the page, reads bubbles, then automatically attempts Numerical, Word/Text, Ordered Pair, and Quadrant/Axis handwriting. Low-confidence answers stay orange for review.</p></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn light" href="./answer-sheet-builder.html">Answer Sheet</a><a class="btn light" href="./answer-key-builder.html">Answer Key</a><a class="btn blue" href="./sync.html">Sync from Laptop</a></div>
  </div>
 
@@ -81,7 +81,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
     <div class="metric"><b id="manualMetric">0</b><small>Handwritten</small></div>
     <div class="metric"><b id="warningMetric">0</b><small>Review</small></div>
    </div>
-   <div class="status warn" style="margin-bottom:12px">Orange items need your attention. Handwritten answers are shown as image crops so you can type exactly what the learner wrote.</div>
+   <div class="status warn" style="margin-bottom:12px">Handwritten answers are auto-read when possible. Orange items have low confidence or are blank—check the image crop and correct only when needed.</div>
    <div id="reviewList" class="reviewList"></div>
   </div>
  </section>
@@ -103,6 +103,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 <canvas id="warp"></canvas>
 <iframe id="layoutFrame" src="./answer-sheet-builder.html?scanner-layout=5"></iframe>
 
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 const KEY_REG='smartScannerAnswerKeys';
 const CURRENT_KEY='smartScannerCurrentAnswerKey';
@@ -111,6 +112,7 @@ const SCAN_REG='smartScannerScans';
 const FRAME_W=900,FRAME_H=1273;
 let currentKey=null,currentMap=null,currentScan=null,warpedImage=null,layoutReady=false;
 let mediaStream=null,liveTimer=null,liveBusy=false,stableFrames=0,lastLivePts=null,autoCaptureLocked=false;
+let ocrWorker=null,ocrWorkerPromise=null;
 
 const cameraInput=document.getElementById('cameraInput'),galleryInput=document.getElementById('galleryInput');
 const liveVideo=document.getElementById('liveVideo'),liveBadge=document.getElementById('liveBadge'),scanFrame=document.getElementById('scanFrame');
@@ -339,8 +341,18 @@ async function processImageData(imageData,pts,label){
    showAlignedPreview();
    setScanStatus('Reading aligned answer areas and bubble marks…','warn');
    currentScan=readDynamicSheet(warpedImage,currentMap,currentKey.entries);
+   if(currentScan.manual){
+     setScanStatus('Reading handwritten answers automatically…','warn');
+     try{
+       await autoRecognizeHandwriting(warpedImage,currentMap,currentKey.entries,currentScan);
+     }catch(ocrErr){
+       console.warn('Handwriting OCR unavailable',ocrErr);
+       currentScan.ocrError=String(ocrErr&&ocrErr.message||ocrErr);
+     }
+   }
    renderReview();
-   setScanStatus((label||'Scan')+' complete. Review orange and handwritten items before saving.','ok');
+   const reviewCount=currentScan.responses.filter(r=>r.uncertain).length;
+   setScanStatus((label||'Scan')+' complete. '+(currentScan.ocrError?'Handwriting OCR could not load; handwritten crops are ready for manual review.':(reviewCount?reviewCount+' item(s) need review.':'All detected answers were read automatically.')),'ok');
  }catch(e){
    console.error(e);autoCaptureLocked=false;
    setScanStatus('Scan failed: '+e.message,'bad');
@@ -590,6 +602,103 @@ function cropNorm(r){
  const x0=Math.max(0,Math.floor(r.x0*FRAME_W)),y0=Math.max(0,Math.floor(r.y0*FRAME_H)),x1=Math.min(FRAME_W,Math.ceil(r.x1*FRAME_W)),y1=Math.min(FRAME_H,Math.ceil(r.y1*FRAME_H));
  const w=Math.max(1,x1-x0),h=Math.max(1,y1-y0),c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(warp,x0,y0,w,h,0,0,w,h);return c.toDataURL('image/jpeg',.88);
 }
+function getOCRWorker(){
+ if(ocrWorker)return Promise.resolve(ocrWorker);
+ if(ocrWorkerPromise)return ocrWorkerPromise;
+ ocrWorkerPromise=(async()=>{
+   if(!window.Tesseract||typeof Tesseract.createWorker!=='function')throw new Error('Handwriting reader library did not load. Check internet connection.');
+   const w=await Tesseract.createWorker('eng');
+   ocrWorker=w;
+   return w;
+ })().catch(e=>{ocrWorkerPromise=null;throw e});
+ return ocrWorkerPromise;
+}
+function ocrSourceCanvas(img){
+ const cv=document.createElement('canvas');cv.width=img.width;cv.height=img.height;
+ cv.getContext('2d',{willReadFrequently:true}).putImageData(img,0,0);return cv;
+}
+function prepareOCRCrop(source,r){
+ const x0=Math.max(0,Math.floor(r.x0*source.width)),y0=Math.max(0,Math.floor(r.y0*source.height));
+ const x1=Math.min(source.width,Math.ceil(r.x1*source.width)),y1=Math.min(source.height,Math.ceil(r.y1*source.height));
+ let sw=Math.max(2,x1-x0),sh=Math.max(2,y1-y0);
+ const px=Math.min(Math.floor(sw*.055),8),py=Math.min(Math.floor(sh*.08),6);
+ const sx=x0+px,sy=y0+py;sw=Math.max(2,sw-px*2);sh=Math.max(2,sh-py*2);
+ const scale=Math.max(3,Math.min(6,Math.round(150/sh)));
+ const cv=document.createElement('canvas');cv.width=Math.max(80,Math.round(sw*scale));cv.height=Math.max(80,Math.round(sh*scale));
+ const ctx=cv.getContext('2d',{willReadFrequently:true});ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);
+ ctx.imageSmoothingEnabled=true;ctx.drawImage(source,sx,sy,sw,sh,0,0,cv.width,cv.height);
+ const id=ctx.getImageData(0,0,cv.width,cv.height),d=id.data;
+ for(let i=0;i<d.length;i+=4){const g=d[i]*.299+d[i+1]*.587+d[i+2]*.114;const v=g<205?0:255;d[i]=d[i+1]=d[i+2]=v;d[i+3]=255}
+ ctx.putImageData(id,0,0);return cv;
+}
+function cleanOCRText(s){return String(s||'').replace(/[\r\n]+/g,' ').replace(/\s+/g,' ').trim()}
+function cleanNumericOCR(s){return cleanOCRText(s).replace(/\s+/g,'').replace(/[−–—]/g,'-')}
+function cleanPairOCR(s){return cleanNumericOCR(s).replace(/[;:]/g,',')}
+function levenshtein(a,b){
+ a=String(a);b=String(b);const dp=Array.from({length:a.length+1},()=>Array(b.length+1).fill(0));
+ for(let i=0;i<=a.length;i++)dp[i][0]=i;for(let j=0;j<=b.length;j++)dp[0][j]=j;
+ for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+ return dp[a.length][b.length];
+}
+function normalizeLocationOCR(raw){
+ const original=cleanOCRText(raw),s=original.toLowerCase().replace(/[−–—]/g,'-').replace(/[^a-z0-9-]+/g,' ').replace(/\s+/g,' ').trim();
+ if(!s)return '';
+ if(/origin|0rigin/.test(s))return 'origin';
+ if(/(^|\s)x\s*-?\s*axis|xaxis/.test(s))return 'x-axis';
+ if(/(^|\s)y\s*-?\s*axis|yaxis/.test(s))return 'y-axis';
+ const q=s.match(/(?:quadrant\s*)?(iv|iii|ii|i|4|3|2|1)\b/);
+ if(q){const m={i:'I',ii:'II',iii:'III',iv:'IV','1':'I','2':'II','3':'III','4':'IV'};return 'Quadrant '+m[q[1]]}
+ const choices=['Quadrant I','Quadrant II','Quadrant III','Quadrant IV','x-axis','y-axis','origin'];
+ let best='',bestRatio=1;
+ for(const x of choices){const a=s.replace(/\s+/g,''),b=x.toLowerCase().replace(/\s+/g,'');const ratio=levenshtein(a,b)/Math.max(a.length,b.length,1);if(ratio<bestRatio){bestRatio=ratio;best=x}}
+ return bestRatio<=.34?best:original;
+}
+async function recognizeRect(worker,source,rect,kind){
+ const cv=prepareOCRCrop(source,rect);
+ let whitelist='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -',psm='7';
+ if(kind==='pair')whitelist='0123456789-+.,() ';
+ else if(kind==='numeric')whitelist='0123456789-+.,/()eExX^ ';
+ else if(kind==='char'){whitelist='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+./';psm='10'}
+ else if(kind==='location')whitelist='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789- ';
+ await worker.setParameters({tessedit_char_whitelist:whitelist,tessedit_pageseg_mode:psm,preserve_interword_spaces:'1'});
+ const out=await worker.recognize(cv),data=out&&out.data||{};
+ return{text:cleanOCRText(data.text),confidence:Number(data.confidence||0)};
+}
+async function autoRecognizeHandwriting(img,map,entries,scan){
+ const handIndexes=[];map.forEach((m,i)=>{if(m.kind==='hand')handIndexes.push(i)});
+ if(!handIndexes.length)return;
+ const worker=await getOCRWorker(),source=ocrSourceCanvas(img);
+ for(let p=0;p<handIndexes.length;p++){
+   const i=handIndexes[p],m=map[i],e=entries[i],r=scan.responses[i],rects=m.boxRects&&m.boxRects.length?m.boxRects:[m.rect];
+   setScanStatus('Reading handwriting '+(p+1)+' of '+handIndexes.length+'…','warn');
+   try{
+     let readings=[],accepted=false;
+     if(e.type==='coord'){
+       const a=await recognizeRect(worker,source,rects[0]||m.rect,'pair');
+       const b=await recognizeRect(worker,source,rects[1]||m.rect,'location');
+       r.answer={orderedPair:cleanPairOCR(a.text),location:normalizeLocationOCR(b.text)};readings=[a,b];
+       accepted=!!r.answer.orderedPair&&!!r.answer.location&&Math.min(a.confidence,b.confidence)>=28;
+     }else if(e.type==='num'&&e.entryMode==='value'){
+       const values=[];
+       for(const rr of rects){const a=await recognizeRect(worker,source,rr,'numeric');a.text=cleanNumericOCR(a.text);readings.push(a);values.push(a.text)}
+       r.answer={values};accepted=values.every(Boolean)&&Math.min(...readings.map(x=>x.confidence))>=26;
+     }else if((e.type==='word'||(e.type==='num'&&e.entryMode!=='value'))&&rects.length>1){
+       let text='';
+       for(const rr of rects){const a=await recognizeRect(worker,source,rr,e.type==='num'?'numeric':'char');a.text=e.type==='num'?cleanNumericOCR(a.text):cleanOCRText(a.text).replace(/\s+/g,'');readings.push(a);text+=a.text.slice(0,1)}
+       r.answer={text};accepted=!!text&&text.length===rects.length&&Math.min(...readings.map(x=>x.confidence))>=24;
+     }else{
+       const kind=e.type==='num'?'numeric':(e.type==='short'&&e.meta&&e.meta.kind==='letter'?'char':'text');
+       const a=await recognizeRect(worker,source,rects[0]||m.rect,kind);
+       const text=kind==='numeric'?cleanNumericOCR(a.text):cleanOCRText(a.text);
+       r.answer={text};readings=[a];accepted=!!text&&a.confidence>=(kind==='text'?34:26);
+     }
+     r.ocrTried=true;r.ocrConfidence=readings.length?Math.round(readings.reduce((s,x)=>s+x.confidence,0)/readings.length):0;r.uncertain=!accepted;
+   }catch(e2){console.warn('OCR item failed',e2);r.ocrTried=true;r.ocrConfidence=0;r.uncertain=true}
+ }
+ scan.auto=scan.responses.filter(r=>!r.uncertain).length;
+ scan.warnings=scan.responses.filter(r=>r.uncertain).length;
+ scan.manual=scan.responses.filter(r=>r.manual).length;
+}
 function renderReview(){
  if(!currentScan)return;
  reviewCard.classList.remove('hidden');saveCard.classList.remove('hidden');
@@ -602,14 +711,14 @@ function reviewHTML(r,e,i){
    body='<div class="choiceRow">'+r.labels.map(x=>'<button class="choice '+(r.answer===x?'selected ':'')+(r.uncertain?'uncertain':'')+'" onclick="setBubble('+i+',\''+String(x).replace(/'/g,"\\'")+'\')">'+esc(x)+'</button>').join('')+'</div>';
    note=r.uncertain?'Bubble was unclear or blank. Tap the learner\'s intended answer.':'Bubble read automatically.';
  }else if(e.type==='coord'){
-   body='<div class="handReview"><img class="crop" src="'+r.crop+'"><div class="multiInputs"><input class="answerInput" placeholder="Ordered pair" oninput="setCoord('+i+',\'orderedPair\',this.value)"><input class="answerInput" placeholder="Quadrant / Axis / Origin" oninput="setCoord('+i+',\'location\',this.value)"></div></div>';
-   note='Type the two handwritten responses shown in the crop.';
+   body='<div class="handReview"><img class="crop" src="'+r.crop+'"><div class="multiInputs"><input class="answerInput" value="'+esc(r.answer.orderedPair||'')+'" placeholder="Ordered pair" oninput="setCoord('+i+',\'orderedPair\',this.value)"><input class="answerInput" value="'+esc(r.answer.location||'')+'" placeholder="Quadrant / Axis / Origin" oninput="setCoord('+i+',\'location\',this.value)"></div></div>';
+   note=r.ocrTried?(r.uncertain?'OCR guess ('+(r.ocrConfidence||0)+'% confidence). Check the crop and correct if needed.':'Handwriting read automatically ('+(r.ocrConfidence||0)+'% confidence).'):'Type the two handwritten responses shown in the crop.';
  }else if(e.type==='num'&&e.entryMode==='value'){
-   body='<div class="handReview"><img class="crop" src="'+r.crop+'"><div class="multiInputs">'+(e.values||[]).map((v,vi)=>'<input class="answerInput" placeholder="Value '+(vi+1)+'" oninput="setNum('+i+','+vi+',this.value)">').join('')+'</div></div>';
-   note='Type one whole numerical value for each printed box.';
+   body='<div class="handReview"><img class="crop" src="'+r.crop+'"><div class="multiInputs">'+(e.values||[]).map((v,vi)=>'<input class="answerInput" value="'+esc((r.answer.values||[])[vi]||'')+'" placeholder="Value '+(vi+1)+'" oninput="setNum('+i+','+vi+',this.value)">').join('')+'</div></div>';
+   note=r.ocrTried?(r.uncertain?'OCR guess ('+(r.ocrConfidence||0)+'% confidence). Check orange values.':'Numerical handwriting read automatically ('+(r.ocrConfidence||0)+'% confidence).'):'Type one whole numerical value for each printed box.';
  }else{
-   body='<div class="handReview"><img class="crop" src="'+r.crop+'"><input class="answerInput" placeholder="Type learner answer" oninput="setText('+i+',this.value)"></div>';
-   note='Type the handwritten response shown in the crop.';
+   body='<div class="handReview"><img class="crop" src="'+r.crop+'"><input class="answerInput" value="'+esc(r.answer.text||'')+'" placeholder="Type learner answer" oninput="setText('+i+',this.value)"></div>';
+   note=r.ocrTried?(r.uncertain?'OCR guess ('+(r.ocrConfidence||0)+'% confidence). Check the crop and correct if needed.':'Handwriting read automatically ('+(r.ocrConfidence||0)+'% confidence).'):'Type the handwritten response shown in the crop.';
  }
  return '<div id="rev-'+i+'" class="reviewItem '+(r.uncertain?'problem':'')+'"><div class="reviewTop"><div class="reviewNo">'+esc(e.display)+'.</div><div><span class="typeTag">'+esc(typeName(e))+'</span></div><div class="answerArea">'+body+'</div></div><div class="reviewNote">'+esc(note)+'</div></div>';
 }
