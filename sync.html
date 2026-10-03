@@ -82,7 +82,7 @@ details{border:1px solid var(--line);border-radius:12px;background:#fff;margin-t
     <button id="pullBtn" class="btn green bigAction" onclick="syncFromLaptop()">↓ Sync from Laptop</button>
     <div id="receiveStatus" class="status hidden"></div>
     <div id="receivedSummary" class="summary hidden"></div>
-    <div id="openScannerBox" class="actions hidden"><a class="btn primary" href="./scanner.html">Open Scanner →</a></div>
+    <div id="openScannerBox" class="actions"><a class="btn primary" href="./scanner.html">Open Scanner →</a></div>
    </div>
   </section>
  </div>
@@ -376,7 +376,7 @@ async function syncFromLaptop(){
 function resetPairing(){
  if(!confirm('Reset device pairing? You will need to scan a new Pair Phone QR afterward.'))return;
  localStorage.removeItem(PAIR_KEY);localStorage.removeItem(LAST_PUSH_KEY);localStorage.removeItem(LAST_PULL_KEY);
- pairBox.classList.add('hidden');receivedSummary.classList.add('hidden');openScannerBox.classList.add('hidden');
+ pairBox.classList.add('hidden');receivedSummary.classList.add('hidden');
  updatePairUI();
  show(sendStatus,'Pairing reset. Click Pair Phone when ready.','warn');
 }
