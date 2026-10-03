@@ -25,11 +25,11 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 </style>
 </head>
 <body>
-<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V1</span></header>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V2 • BLOCK ALIGN</span></header>
 
 <main class="wrap">
  <div class="hero">
-  <div><h1>Scan Answer Sheet</h1><p>Bubble responses are read automatically. Handwritten boxes are cropped for quick review and confirmation before scoring.</p></div>
+  <div><h1>Scan Answer Sheet</h1><p>The scanner finds the four black registration blocks, straightens the page, then reads bubble responses. Handwritten boxes are cropped for review.</p></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn light" href="./answer-key-builder.html">← Answer Key</a><a class="btn blue" href="./sync.html">Sync from Laptop</a></div>
  </div>
 
@@ -48,7 +48,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
  <section class="card">
   <div class="cardHead"><h2>2. Take or Choose Photo</h2></div>
   <div class="cardBody">
-   <div class="help">Take a clear portrait photo of one answer sheet only. Keep all four black corner squares visible and avoid strong shadows over the paper.</div>
+   <div class="help">Take a clear photo of one answer sheet. It does not have to be perfectly aligned—just keep the whole sheet and all four black registration blocks visible, with no heavy shadow across the answers.</div>
    <div class="photoFrame">
     <img id="photoPreview">
     <div id="photoPlaceholder" class="placeholder"><div class="icon">📄</div><b>No answer sheet photo yet</b><div class="help" style="color:#aaa">Take a photo or choose one from the gallery.</div></div>
@@ -93,7 +93,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 
 <canvas id="capture"></canvas>
 <canvas id="warp"></canvas>
-<iframe id="layoutFrame" src="./answer-sheet-builder.html"></iframe>
+<iframe id="layoutFrame" src="./answer-sheet-builder.html?scanner-layout=2"></iframe>
 
 <script>
 const KEY_REG='smartScannerAnswerKeys';
@@ -208,10 +208,10 @@ async function photoSelected(ev){
    const pts=findFourMarkers(imageData);
    setScanStatus('Straightening the answer sheet…','warn');
    warpedImage=warpPage(imageData,pts,FRAME_W,FRAME_H);
-   setScanStatus('Reading bubble responses…','warn');
+   setScanStatus('Reading aligned answer areas and bubble marks…','warn');
    currentScan=readDynamicSheet(warpedImage,currentMap,currentKey.entries);
    renderReview();
-   setScanStatus('Scan complete. Review orange and handwritten items before saving.','ok');
+   setScanStatus('Scan complete. The page was aligned from the 4 black blocks. Review orange and handwritten items before saving.','ok');
  }catch(e){console.error(e);setScanStatus('Scan failed: '+e.message,'bad')}
 }
 function setScanStatus(t,kind=''){scanStatus.className='status '+kind;scanStatus.textContent=t}
@@ -228,25 +228,36 @@ function imageToImageData(source){
  return ctx.getImageData(0,0,c.width,c.height);
 }
 function findFourMarkers(img){
- const w=img.width,h=img.height,win=Math.max(14,Math.round(w*.028)),xPad=Math.round(w*.025),yPad=Math.round(h*.018);
- const tl=findMarkerOnWhite(img,xPad,Math.floor(w*.45),yPad,Math.floor(h*.34),win);
- const tr=findMarkerOnWhite(img,Math.floor(w*.55),w-xPad,yPad,Math.floor(h*.34),win);
- const bl=findMarkerOnWhite(img,xPad,Math.floor(w*.45),Math.floor(h*.66),h-yPad,win);
- const br=findMarkerOnWhite(img,Math.floor(w*.55),w-xPad,Math.floor(h*.66),h-yPad,win);
- if(!tl||!tr||!bl||!br)throw new Error('Could not find all 4 black corner squares. Keep the full sheet visible and avoid deep shadows.');
+ const w=img.width,h=img.height,baseWin=Math.max(14,Math.round(w*.028)),xPad=Math.round(w*.015),yPad=Math.round(h*.012);
+ function pass(win,wide=false){
+   const topY=wide?Math.floor(h*.43):Math.floor(h*.36);
+   const botY=wide?Math.floor(h*.57):Math.floor(h*.64);
+   const leftX=wide?Math.floor(w*.49):Math.floor(w*.46);
+   const rightX=wide?Math.floor(w*.51):Math.floor(w*.54);
+   return{
+     tl:findMarkerOnWhite(img,xPad,leftX,yPad,topY,win),
+     tr:findMarkerOnWhite(img,rightX,w-xPad,yPad,topY,win),
+     bl:findMarkerOnWhite(img,xPad,leftX,botY,h-yPad,win),
+     br:findMarkerOnWhite(img,rightX,w-xPad,botY,h-yPad,win)
+   };
+ }
+ let pts=pass(baseWin,false);
+ if(!pts.tl||!pts.tr||!pts.bl||!pts.br)pts=pass(Math.round(baseWin*1.35),true);
+ if(!pts.tl||!pts.tr||!pts.bl||!pts.br)throw new Error('Could not lock onto all 4 black registration blocks. Make sure the entire sheet is visible and the black corner blocks are not cut off.');
+ const {tl,tr,bl,br}=pts;
  const top=dist(tl,tr),bottom=dist(bl,br),left=dist(tl,bl),right=dist(tr,br),ratio=((left+right)/2)/((top+bottom)/2);
- if(Math.min(top,bottom,left,right)<w*.35)throw new Error('Move closer. The paper is too small in the photo.');
- if(ratio<1.2||ratio>1.75)throw new Error('Corner geometry looks wrong. Retake the photo more directly above the paper.');
+ if(Math.min(top,bottom,left,right)<w*.25)throw new Error('The sheet is too small in the photo. Move a little closer while keeping all 4 black blocks visible.');
+ if(ratio<1.05||ratio>1.95)throw new Error('The 4 detected blocks do not form a valid answer-sheet rectangle. Retake the photo with the full sheet visible.');
  return{tl,tr,bl,br};
 }
 function findMarkerOnWhite(img,x0,x1,y0,y1,win){
  const w=img.width,h=img.height,d=img.data;x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(w,Math.floor(x1));y1=Math.min(h,Math.floor(y1));
- const dark=new Uint8Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const p=(y*w+x)*4,g=d[p]*.299+d[p+1]*.587+d[p+2]*.114;dark[y*w+x]=g<125?1:0}
+ const dark=new Uint8Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const p=(y*w+x)*4,g=d[p]*.299+d[p+1]*.587+d[p+2]*.114;dark[y*w+x]=g<150?1:0}
  const iw=w+1,integ=new Uint32Array((w+1)*(h+1));for(let y=1;y<=h;y++){let row=0;for(let x=1;x<=w;x++){row+=dark[(y-1)*w+(x-1)];integ[y*iw+x]=integ[(y-1)*iw+x]+row}}
  function sum(ax,ay,bx,by){ax=Math.max(0,Math.floor(ax));ay=Math.max(0,Math.floor(ay));bx=Math.min(w,Math.floor(bx));by=Math.min(h,Math.floor(by));if(bx<=ax||by<=ay)return{sum:0,area:1};return{sum:integ[by*iw+bx]-integ[ay*iw+bx]-integ[by*iw+ax]+integ[ay*iw+ax],area:(bx-ax)*(by-ay)}}
  const step=Math.max(2,Math.round(win/5)),outer=Math.max(win+6,Math.round(win*2.4)),ih=Math.floor(win/2),oh=Math.floor(outer/2);let best=null;
- for(let cy=y0+oh;cy<y1-oh;cy+=step)for(let cx=x0+oh;cx<x1-oh;cx+=step){const inn=sum(cx-ih,cy-ih,cx-ih+win,cy-ih+win),out=sum(cx-oh,cy-oh,cx-oh+outer,cy-oh+outer),inner=inn.sum/inn.area;if(inner<.53)continue;const ring=Math.max(0,out.sum-inn.sum)/Math.max(1,out.area-inn.area),score=inner-.82*ring;if(!best||score>best.score)best={x:cx,y:cy,score}}
- return best&&best.score>.25?best:null;
+ for(let cy=y0+oh;cy<y1-oh;cy+=step)for(let cx=x0+oh;cx<x1-oh;cx+=step){const inn=sum(cx-ih,cy-ih,cx-ih+win,cy-ih+win),out=sum(cx-oh,cy-oh,cx-oh+outer,cy-oh+outer),inner=inn.sum/inn.area;if(inner<.48)continue;const ring=Math.max(0,out.sum-inn.sum)/Math.max(1,out.area-inn.area),score=inner-.82*ring;if(!best||score>best.score)best={x:cx,y:cy,score}}
+ return best&&best.score>.18?best:null;
 }
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
 function warpPage(src,pts,W,H){
@@ -257,20 +268,40 @@ function warpPage(src,pts,W,H){
 }
 function homography(from,to){const A=[],b=[];for(let i=0;i<4;i++){const u=from[i].x,v=from[i].y,x=to[i].x,y=to[i].y;A.push([u,v,1,0,0,0,-x*u,-x*v]);b.push(x);A.push([0,0,0,u,v,1,-y*u,-y*v]);b.push(y)}return solve(A,b)}
 function solve(A,b){const n=b.length,M=A.map((r,i)=>r.slice().concat(b[i]));for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;[M[c],M[p]]=[M[p],M[c]];if(Math.abs(M[c][c])<1e-10)throw new Error('Perspective correction failed.');const d=M[c][c];for(let j=c;j<=n;j++)M[c][j]/=d;for(let r=0;r<n;r++)if(r!==c){const q=M[r][c];for(let j=c;j<=n;j++)M[r][j]-=q*M[c][j]}}return M.map(r=>r[n])}
-function sampleDark(img,nx,ny,r){const cx=nx*(img.width-1),cy=ny*(img.height-1),d=img.data,w=img.width,h=img.height;let sum=0,n=0,rr=r*r;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(dx*dx+dy*dy>rr)continue;const x=Math.round(cx+dx),y=Math.round(cy+dy);if(x<0||y<0||x>=w||y>=h)continue;const p=(y*w+x)*4,g=d[p]*.299+d[p+1]*.587+d[p+2]*.114;sum+=1-g/255;n++}return n?sum/n:0}
+function sampleAnnulusDark(img,nx,ny,r0,r1){
+ const cx=nx*(img.width-1),cy=ny*(img.height-1),d=img.data,w=img.width,h=img.height;
+ let sum=0,n=0;const a=r0*r0,b=r1*r1,lim=Math.ceil(r1);
+ for(let dy=-lim;dy<=lim;dy++)for(let dx=-lim;dx<=lim;dx++){
+   const rr=dx*dx+dy*dy;if(rr<a||rr>b)continue;
+   const x=Math.round(cx+dx),y=Math.round(cy+dy);if(x<0||y<0||x>=w||y>=h)continue;
+   const p=(y*w+x)*4,g=d[p]*.299+d[p+1]*.587+d[p+2]*.114;
+   sum+=1-g/255;n++;
+ }
+ return n?sum/n:0;
+}
+function bubbleFillScore(img,b){
+ const R=Math.max(4,b.r*img.width);
+ // Read the interior ring, not the printed choice letter at the center and not the circle outline.
+ const ink=sampleAnnulusDark(img,b.x,b.y,R*.42,R*.78);
+ // Local background compensation makes the reading less sensitive to shadows.
+ const bg=sampleAnnulusDark(img,b.x,b.y,R*1.08,R*1.28);
+ return Math.max(0,ink-bg*.70);
+}
 
 function readDynamicSheet(img,map,entries){
- const bubbleVals=[];map.forEach(m=>{if(m.kind==='bubble')m.bubbles.forEach(b=>bubbleVals.push(sampleDark(img,b.x,b.y,Math.max(2,Math.round(b.r*img.width*.48)))))});
- const sorted=bubbleVals.slice().sort((a,b)=>a-b),baseline=sorted.length?(sorted[Math.floor(sorted.length*.55)]||0):0;
+ const bubbleVals=[];map.forEach(m=>{if(m.kind==='bubble')m.bubbles.forEach(b=>bubbleVals.push(bubbleFillScore(img,b)))});
+ const sorted=bubbleVals.slice().sort((a,b)=>a-b),baseline=sorted.length?(sorted[Math.floor(sorted.length*.50)]||0):0;
  let auto=0,warnings=0,manual=0;
  const responses=map.map((m,i)=>{
    const e=entries[i];
    if(m.kind==='bubble'){
-     const vals=m.bubbles.map(b=>sampleDark(img,b.x,b.y,Math.max(2,Math.round(b.r*img.width*.48))));
+     const vals=m.bubbles.map(b=>bubbleFillScore(img,b));
      const ranked=vals.map((v,j)=>({v,j})).sort((a,b)=>b.v-a.v),top=ranked[0],second=ranked[1]||{v:0};
-     const filled=top.v>=baseline+.045,separated=(top.v-second.v)>=.020,answer=filled&&separated?m.labels[top.j]:'';
+     const minFill=Math.max(.050,baseline+.035);
+     const minGap=Math.max(.018,baseline*.35);
+     const filled=top.v>=minFill,separated=(top.v-second.v)>=minGap,answer=filled&&separated?m.labels[top.j]:'';
      const uncertain=!answer;if(uncertain)warnings++;else auto++;
-     return{entryId:e.id,type:e.type,answer,uncertain,vals,labels:m.labels};
+     return{entryId:e.id,type:e.type,answer,uncertain,vals,labels:m.labels,baseline,minFill,minGap};
    }
    manual++;warnings++;
    return{entryId:e.id,type:e.type,manual:true,crop:cropNorm(m.rect),answer:e.type==='coord'?{orderedPair:'',location:''}:e.type==='num'&&e.entryMode==='value'?{values:Array.from({length:e.values?.length||m.boxCount||1},()=> '')}:{text:''},uncertain:true};
