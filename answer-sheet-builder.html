@@ -244,9 +244,13 @@ function renderQuestions(){
 function removeSelected(){const sel=new Set([...document.querySelectorAll('.qsel:checked')].map(x=>Number(x.dataset.i)));if(!sel.size)return;state.questions=state.questions.filter((_,i)=>!sel.has(i));saveDraft();renderQuestions()}
 
 function buildPreviewLearners(){
- let options='<option value="">Blank / Generic Preview</option>';
- if(state.mode==='personalized')options+=(state.learners||[]).map((l,i)=>`<option value="${i}">${esc(l.name)}${l.section?' — '+esc(l.section):''}</option>`).join('');
- previewLearner.innerHTML=options;
+ if(state.mode==='personalized' && (state.learners||[]).length){
+   previewLearner.innerHTML=(state.learners||[]).map((l,i)=>`<option value="${i}">${esc(l.name)}${l.section?' — '+esc(l.section):''}</option>`).join('');
+   previewLearner.value='0';
+ } else {
+   previewLearner.innerHTML='<option value="">Blank / Generic Preview</option>';
+   previewLearner.value='';
+ }
 }
 function widthSpan(w){return w==='Large'?6:w==='Small'?2:4}
 function renderPreview(){
