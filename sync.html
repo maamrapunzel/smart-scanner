@@ -46,7 +46,7 @@ details{border:1px solid var(--line);border-radius:12px;background:#fff;margin-t
 
     <div id="laptopPairState" class="pairState">
      <span id="laptopDot" class="dot"></span>
-     <div><b id="laptopPairTitle">Phone not paired yet</b><small id="laptopPairSub">Pair once, then you can use Sync Now anytime.</small></div>
+     <div><b id="laptopPairTitle">Phone not paired yet</b><small id="laptopPairSub">Pair once, then you can use Sync Now anytime.</small><small id="laptopPairCode" style="display:block;margin-top:3px;font-weight:700"></small></div>
     </div>
 
     <div class="actions">
@@ -76,7 +76,7 @@ details{border:1px solid var(--line);border-radius:12px;background:#fff;margin-t
     <div class="deviceLabel">Get the latest assessment</div>
     <div id="phonePairState" class="pairState">
      <span id="phoneDot" class="dot"></span>
-     <div><b id="phonePairTitle">This device is not paired</b><small id="phonePairSub">Scan the Pair Phone QR from the laptop once.</small></div>
+     <div><b id="phonePairTitle">This device is not paired</b><small id="phonePairSub">Scan the Pair Phone QR from the laptop once.</small><small id="phonePairCode" style="display:block;margin-top:3px;font-weight:700"></small></div>
     </div>
 
     <button id="pullBtn" class="btn green bigAction" onclick="syncFromLaptop()">↓ Sync from Laptop</button>
@@ -213,6 +213,9 @@ function updatePairUI(){
  laptopPairTitle.textContent=paired?'Pairing ready':'Phone not paired yet';
  laptopPairSub.textContent=paired?'Use Sync Now whenever the Answer Sheet or Answer Key changes.':'Pair once, then you can use Sync Now anytime.';
  phonePairTitle.textContent=paired?'This device is paired':'This device is not paired';
+ const code=pairId();
+ laptopPairCode.textContent=paired?'Pair code: '+code:'';
+ phonePairCode.textContent=paired?'Pair code: '+code:'';
  const last=localStorage.getItem(LAST_PULL_KEY);
  phonePairSub.textContent=paired?(last?'Last phone sync: '+new Date(last).toLocaleString():'Ready to receive from laptop.'):'Scan the Pair Phone QR from the laptop once.';
  pullBtn.disabled=!paired;
@@ -307,10 +310,30 @@ async function copyPhoneLink(){
 async function syncFromLaptop(){
  const ep=endpointValue(),code=pairId();
  if(!ep||!code){show(receiveStatus,'This phone is not paired yet. Scan the Pair Phone QR from the laptop once.','bad');return}
- show(receiveStatus,'Getting the latest Answer Sheet and Answer Key…','warn');
+ show(receiveStatus,'Checking pair '+code+' and getting the latest assessment…','warn');
  try{
-   const data=await jsonp(ep+'?action=get&code='+encodeURIComponent(code));
-   if(!data?.ok)throw new Error(data?.error||'No recent laptop sync found.');
+   let data=null,lastErr='';
+   for(let attempt=1;attempt<=4;attempt++){
+     try{
+       data=await jsonp(ep+'?action=get&code='+encodeURIComponent(code));
+       if(data?.ok)break;
+       lastErr=String(data?.error||'No recent laptop sync found.');
+     }catch(e){
+       lastErr=String(e.message||e);
+     }
+     if(attempt<4){
+       show(receiveStatus,'Still checking pair '+code+'… retry '+attempt+'/3','warn');
+       await new Promise(r=>setTimeout(r,900));
+     }
+   }
+   if(!data?.ok){
+     const lower=lastErr.toLowerCase();
+     if(lower.includes('not found')||lower.includes('expired')){
+       throw new Error('No package was found for pair '+code+'. The phone is probably using an old pairing code. On the laptop click Pair Phone and scan the new QR on this phone.');
+     }
+     throw new Error(lastErr||'Could not receive the latest laptop sync.');
+   }
+
    const p=data.payload;
    if(!p?.sheet||!p?.key)throw new Error('The sync package is incomplete.');
 
@@ -328,11 +351,10 @@ async function syncFromLaptop(){
     '<div class="metric"><small>Answer Entries</small><b>'+((p.key.entries||[]).length)+'</b></div>'+
     '<div class="metric"><small>Learners</small><b>'+((p.sheet.learners||[]).length)+'</b></div>';
    receivedSummary.classList.remove('hidden');openScannerBox.classList.remove('hidden');
-   show(receiveStatus,'Synced successfully. This phone now has the latest assessment.','ok');
+   show(receiveStatus,'Synced successfully. Pair '+code+' is now updated on this phone.','ok');
    refreshSummary();
  }catch(e){
-   const msg=String(e.message||e);
-   show(receiveStatus,'Sync failed: '+msg+(msg.toLowerCase().includes('expired')?' Go to the laptop and click Sync Now, then try again.':''),'bad');
+   show(receiveStatus,'Phone sync failed: '+String(e.message||e),'bad');
  }
 }
 
