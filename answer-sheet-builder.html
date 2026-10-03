@@ -88,28 +88,49 @@ body.print-batch .printPage.two .paper .infoBox.scoreBox .scoreLine{font-size:10
 body.print-batch .printPage.two .paper .extraInfoGrid{gap:1mm!important;margin-top:1mm!important}
 body.print-batch .printPage.two .paper .answerSections{
   grid-template-columns:1fr 1fr!important;
-  grid-template-rows:1fr!important;
-  gap:2mm!important;
+  grid-template-rows:none!important;
+  grid-auto-rows:max-content!important;
+  gap:1.4mm 1.8mm!important;
   flex:1!important;
   min-height:0!important;
-  align-items:stretch!important
+  align-content:start!important;
+  align-items:start!important;
+  overflow:hidden!important
 }
 body.print-batch .printPage.two .paper .answerSec{
-  height:100%!important;
-  min-height:0!important;
+  height:auto!important;
+  min-height:max-content!important;
+  align-self:start!important;
   border-radius:1.5mm!important
 }
 body.print-batch .printPage.two .paper .answerSec h4{
-  padding:1mm 1.3mm!important;
-  font-size:5.5pt!important;
-  line-height:1!important
+  padding:.8mm 1.1mm!important;
+  font-size:5pt!important;
+  line-height:1.05!important
 }
 body.print-batch .printPage.two .paper .answerSec .body{
-  padding:1mm 1.3mm!important;
+  padding:.8mm 1.1mm!important;
+  display:flex!important;
+  flex-direction:column!important;
+  gap:.35mm!important;
+  justify-content:flex-start!important;
+  min-height:0!important;
+  overflow:hidden!important
+}
+/* Pure 40–50 item bubble sheets may stretch to use the full A5 height. */
+body.print-batch .printPage.two .paper.longBubbleSheet .answerSections{
+  grid-template-rows:1fr!important;
+  align-items:stretch!important
+}
+body.print-batch .printPage.two .paper.longBubbleSheet .answerSec{
+  height:100%!important;
+  min-height:0!important
+}
+body.print-batch .printPage.two .paper.longBubbleSheet .answerSec .body{
   display:grid!important;
   grid-template-rows:repeat(25,1fr)!important;
+  gap:0!important;
   justify-content:stretch!important;
-  min-height:0!important;
   overflow:visible!important
 }
 body.print-batch .printPage.two .paper .mcqRow{
@@ -137,7 +158,15 @@ body.print-batch .printPage.two .paper .coordPairBox{height:5.5mm!important;bord
 body.print-batch .printPage.two .paper .coordPairLabel{font-size:3.6pt!important}
 body.print-batch .printPage.two .paper .shortField{width:39mm!important;height:6mm!important;border-width:.3mm!important}
 body.print-batch .printPage.two .paper .shortField.letter{width:10mm!important}
-body.print-batch .printPage.two .paper .answerSec .body.twoColBody{column-gap:2mm!important;row-gap:.6mm!important}
+body.print-batch .printPage.two .paper .answerSec .body.twoColBody{display:grid!important;grid-template-columns:1fr 1fr!important;column-gap:1.2mm!important;row-gap:.35mm!important}
+/* A5 mixed-sheet compact rows */
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .mcqRow{min-height:4.8mm!important}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .groupMcqRow{min-height:4.8mm!important}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .boxRow,
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .coordRow,
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .shortRow{min-height:5.2mm!important}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .coordPairBox{height:5mm!important}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .shortField{height:5mm!important}
 body.print-batch .printPage.two .paper .tiny{font-size:4.5pt!important}
 body.print-batch .printPage.two .paper .footer{font-size:4.5pt!important;margin-top:1mm!important;flex:0 0 auto!important}
 
@@ -194,7 +223,7 @@ body.print-batch .printSlot.empty{outline:none}
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
-<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Answer Sheet Builder</small></div><div class="spacer"></div><span class="pill">GitHub Preview • COORD-2BOX</span></header>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Answer Sheet Builder</small></div><div class="spacer"></div><span class="pill">GitHub Preview • A5-MIXED-FIT</span></header>
 <div class="wrap">
 <div class="wizard">
 <nav class="steps">
