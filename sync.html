@@ -91,8 +91,9 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
   <div class="cardHead"><h2>Apps Script Setup</h2></div>
   <div class="cardBody">
    <div class="step">Open your Google Apps Script project for SMART Scanner.</div>
-   <div class="step">Add the code from <b>smart-sync-backend.gs</b>.</div>
-   <div class="step">Deploy as a Web App, then paste the Web App URL above.</div>
+   <div class="step">Click <b>Copy Backend Code</b>, add a new <b>.gs</b> file in Apps Script, then paste the code.</div>
+   <div class="step">Deploy/Update the project as a Web App, then paste the Web App URL above.</div>
+   <div class="actions"><button class="btn dark" onclick="copyBackendCode()">Copy Backend Code</button><a class="btn light" href="./smart-sync-backend.gs" target="_blank">View Backend Code</a></div>
    <div class="help">The relay stores only temporary sync packages in a private Drive folder named <b>SMART_SCANNER_SYNC_TEMP</b>.</div>
   </div>
  </section>
@@ -228,6 +229,18 @@ async function receiveSync(){
    fetch(ep,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'consume',code})}).catch(()=>{});
  }catch(e){show(receiveStatus,'Import failed: '+e.message,'bad')}
 }
+async function copyBackendCode(){
+ try{
+   const r=await fetch('./smart-sync-backend.gs?v=1',{cache:'no-store'});
+   if(!r.ok)throw new Error('Could not load backend code.');
+   const code=await r.text();
+   await navigator.clipboard.writeText(code);
+   show(endpointStatus,'Backend code copied. Paste it into a new .gs file in Google Apps Script.','ok');
+ }catch(e){
+   show(endpointStatus,'Could not copy automatically. Tap “View Backend Code” and copy it manually.','warn');
+ }
+}
+
 function init(){
  const q=new URLSearchParams(location.search);
  const ep=q.get('endpoint')||localStorage.getItem(ENDPOINT_KEY)||'';
