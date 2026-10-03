@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SMART Scanner — Answer Sheet Builder</title>
+<style>
+:root{--ink:#232126;--muted:#756d74;--line:#e3dce1;--panel:#fff;--bg:#f6f3f5;--pink:#eb4f90;--pink2:#fff1f7;--dark:#1e1a1d;--blue:#3d8ed8;--green:#228e62}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--dark);color:#fff;display:flex;align-items:center;padding:0 18px;gap:12px;position:sticky;top:0;z-index:40}
+.logo{width:38px;height:38px;border-radius:10px;background:var(--pink);display:grid;place-items:center;font-weight:900}.brand b{display:block}.brand small{color:#cfc7cc}.topbar .spacer{flex:1}.pill{border:1px solid #ffffff35;border-radius:999px;padding:6px 10px;font-size:11px}
+.wrap{max-width:1120px;margin:22px auto;padding:0 16px 40px}.wizard{display:grid;grid-template-columns:230px 1fr;gap:18px}
+.steps{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;height:max-content;position:sticky;top:82px}
+.stepBtn{width:100%;border:0;background:transparent;padding:12px;text-align:left;border-radius:11px;display:flex;gap:10px;align-items:center;color:#5d555b;cursor:pointer}
+.stepBtn.active{background:var(--pink2);color:#a92d63;font-weight:800}.stepBtn.done .num{background:var(--green)}.num{width:26px;height:26px;border-radius:50%;background:#cfc5ca;color:#fff;display:grid;place-items:center;font-size:12px;font-weight:800}.stepBtn.active .num{background:var(--pink)}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 8px 24px #6a48550d}
+.panelHead{padding:16px 18px;border-bottom:1px solid var(--line);background:#fcfafb}.panelHead h2{margin:0;font-size:20px}.panelHead p{margin:5px 0 0;color:var(--muted);font-size:13px}
+.panelBody{padding:18px}.actions{padding:14px 18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;background:#fcfafb}
+.btn{border:0;border-radius:10px;padding:10px 16px;font-weight:800;cursor:pointer}.btn.primary{background:var(--pink);color:#fff}.btn.dark{background:var(--dark);color:#fff}.btn.light{background:#eee8ec;color:#3b3338}.btn.blue{background:var(--blue);color:#fff}.btn.green{background:var(--green);color:#fff}
+label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}.field,select,textarea{width:100%;border:1px solid #d9d0d5;border-radius:10px;padding:10px 11px;background:#fff}.help{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.headerTable,.questionTable{width:100%;border-collapse:collapse}.headerTable th,.headerTable td,.questionTable th,.questionTable td{border:1px solid #ddd4d9;padding:9px;font-size:13px;text-align:left}.headerTable th,.questionTable th{background:#332f32;color:#fff}.headerTable input[type=text],.headerTable select{width:100%;padding:7px;border:1px solid #d7cfd3;border-radius:7px}.center{text-align:center!important}.check{width:18px;height:18px}
+.sectionBox{border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px;background:#fff}.sectionBox h3{margin:0 0 8px;font-size:15px}.radioRow,.checkRow{display:flex;gap:14px;flex-wrap:wrap;align-items:center}.radioRow label,.checkRow label{margin:0;display:flex;gap:7px;align-items:center;font-weight:700}.radioRow input,.checkRow input{width:auto}
+.builderBtns{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.builderBtns button{border:1px solid #d8cfd4;background:#fff;padding:9px 12px;border-radius:9px;cursor:pointer;font-weight:700}.builderBtns button:hover{background:var(--pink2);border-color:#e5a7c3}
+.sheetName{font-size:22px;margin-bottom:14px}.sheetName b{font-size:18px}.tag{display:inline-block;background:#f2ecf0;border-radius:999px;padding:4px 8px;font-size:11px}
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed #d7cbd2;border-radius:12px}.danger{background:#fff1f1;color:#a33;border:1px solid #f1c6c6}
+.modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;padding:18px;z-index:100}.modal.show{display:flex}.modalCard{width:min(720px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:16px;box-shadow:0 20px 60px #0004}.modalHead{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center}.modalHead h3{margin:0}.modalBody{padding:18px}.modalFoot{padding:14px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}.x{margin-left:auto;border:0;background:transparent;font-size:22px;cursor:pointer}
+.previewToolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.paperWrap{overflow:auto;background:#e8e3e6;border-radius:14px;padding:18px}.paper{width:210mm;min-height:297mm;margin:auto;background:#fff;position:relative;color:#111;padding:16mm 15mm 15mm;box-shadow:0 6px 20px #0002}
+.corner{position:absolute;width:6mm;height:6mm;background:#000}.c1{left:7mm;top:7mm}.c2{right:7mm;top:7mm}.c3{left:7mm;bottom:7mm}.c4{right:7mm;bottom:7mm}
+.pHead{text-align:center;margin-bottom:8mm}.pHead h1{font-size:18pt;margin:0}.pHead p{font-size:8pt;margin:1.5mm 0 0}
+.infoGrid{display:grid;grid-template-columns:repeat(12,1fr);gap:2mm;margin-bottom:5mm}.infoBox{border:1px solid #222;border-radius:2mm;padding:2mm;min-height:13mm;font-size:7pt}.infoBox b{display:block;margin-bottom:1mm}.answerSections{display:grid;grid-template-columns:1fr 1fr;gap:4mm}.answerSec{border:1px solid #222;border-radius:2.5mm;overflow:hidden}.answerSec.full{grid-column:1/-1}.answerSec h4{margin:0;padding:2mm 2.5mm;background:#f3d9e5;border-bottom:1px solid #222;font-size:8pt}.answerSec .body{padding:2mm 2.5mm}.mcqRow{display:grid;grid-template-columns:8mm repeat(10,7mm);gap:1.2mm;align-items:center;min-height:7mm;font-size:7pt}.bubble{width:5mm;height:5mm;border:.5mm solid #111;border-radius:50%;display:grid;place-items:center;font-size:5.5pt}.boxRow{display:grid;grid-template-columns:8mm 1fr;gap:2mm;align-items:center;margin-bottom:1.4mm;font-size:7pt}.boxes{display:flex;gap:1mm;flex-wrap:wrap}.box{width:7mm;height:7mm;border:.45mm solid #111}.tiny{font-size:6pt;color:#555}.footer{position:absolute;left:15mm;right:15mm;bottom:7mm;text-align:center;font-size:5.5pt;color:#555}
+.hidden{display:none!important}
+@media(max-width:860px){.wizard{grid-template-columns:1fr}.steps{position:static;display:flex;overflow:auto}.stepBtn{min-width:180px}.grid2,.grid3{grid-template-columns:1fr}.paper{transform-origin:top left}}
+@media print{body{background:#fff}.topbar,.steps,.panelHead,.actions,.previewToolbar{display:none!important}.wrap{max-width:none;margin:0;padding:0}.wizard{display:block}.panel{border:0;box-shadow:none}.panelBody{padding:0}.paperWrap{background:#fff;padding:0}.paper{box-shadow:none;margin:0;page-break-after:always}@page{size:A4 portrait;margin:0}}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Answer Sheet Builder</small></div><div class="spacer"></div><span class="pill">GitHub Preview</span></header>
+<div class="wrap">
+<div class="wizard">
+<nav class="steps">
+<button class="stepBtn active" data-step="1"><span class="num">1</span><span>Sheet Name</span></button>
+<button class="stepBtn" data-step="2"><span class="num">2</span><span>Header Boxes</span></button>
+<button class="stepBtn" data-step="3"><span class="num">3</span><span>Student Info</span></button>
+<button class="stepBtn" data-step="4"><span class="num">4</span><span>Define Questions</span></button>
+<button class="stepBtn" data-step="5"><span class="num">5</span><span>Preview & Print</span></button>
+</nav>
+
+<section class="panel">
+<div class="panelHead"><h2 id="stepTitle">Step 1 of 5: Answer Sheet Name</h2><p id="stepDesc">Give this reusable answer sheet a clear name.</p></div>
+<div class="panelBody">
+
+<div id="step1" class="stepPane">
+<label>Answer Sheet Name</label>
+<input id="sheetName" class="field" placeholder="Example: 50-Item Mixed Answer Sheet">
+<div class="help">Use a unique and descriptive name. This is the form/template name, not the test title.</div>
+</div>
+
+<div id="step2" class="stepPane hidden">
+<div class="sheetName"><b>Sheet Name:</b> <span data-sheet-label>Untitled Sheet</span></div>
+<table class="headerTable">
+<thead><tr><th>Usage</th><th class="center">Enabled?</th><th>Displayed Label on Answer Sheet</th><th>Width</th></tr></thead>
+<tbody id="headerRows"></tbody>
+</table>
+<div class="help">You can rename labels. Example: “Class” can display as “Section”. Score may be included as a blank box for teacher use.</div>
+</div>
+
+<div id="step3" class="stepPane hidden">
+<div class="sheetName"><b>Sheet Name:</b> <span data-sheet-label>Untitled Sheet</span></div>
+<div class="sectionBox">
+<h3>Answer Sheet Type</h3>
+<div class="radioRow">
+<label><input type="radio" name="mode" value="blank" checked> Blank / Generic</label>
+<label><input type="radio" name="mode" value="personalized"> Personalized</label>
+</div>
+<div class="help">Personalized sheets can show each learner's name automatically. Blank sheets are reusable for any learner.</div>
+</div>
+<div class="sectionBox">
+<h3>Student ID</h3>
+<div class="checkRow"><label><input id="includeId" type="checkbox"> Include Student ID field</label></div>
+<div id="idOptions" class="grid2 hidden">
+<div><label>Number of ID digits</label><select id="idDigits"><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></div>
+<div><label>Label</label><input id="idLabel" class="field" value="Student ID"></div>
+</div>
+<div class="help">Optional lang ito. Hindi required ang learner ID para makagawa ng answer sheet.</div>
+</div>
+<div id="personalizedOptions" class="sectionBox hidden">
+<h3>Personalized Learner List</h3>
+<label>Paste Learners</label>
+<textarea id="learnerList" rows="7" placeholder="Juan Dela Cruz | Grade 8 - Acacia&#10;Maria Santos | Grade 8 - Acacia"></textarea>
+<div class="help">Format: Name | Section. Student ID is not required.</div>
+</div>
+</div>
+
+<div id="step4" class="stepPane hidden">
+<div class="sheetName"><b>Sheet Name:</b> <span data-sheet-label>Untitled Sheet</span></div>
+<div id="questionEmpty" class="empty">No questions yet. Use the buttons below to build the answer sheet.</div>
+<table id="questionTable" class="questionTable hidden">
+<thead><tr><th style="width:72px">No.</th><th>Type</th><th>Labels / Format</th><th style="width:72px" class="center">Select</th></tr></thead>
+<tbody id="questionRows"></tbody>
+</table>
+<div class="builderBtns">
+<button onclick="openModal('mcq')">＋ Add Multiple Choice</button>
+<button onclick="openModal('tf')">＋ Add True / False</button>
+<button onclick="openModal('word')">＋ Add Word / Text</button>
+<button onclick="openModal('num')">＋ Add Numerical</button>
+<button onclick="removeSelected()">🗑 Remove Selected</button>
+</div>
+<div class="help">Items are automatically numbered in the order you add them. You can mix different answer types in one sheet.</div>
+</div>
+
+<div id="step5" class="stepPane hidden">
+<div class="previewToolbar">
+<button class="btn light" onclick="renderPreview()">Refresh Preview</button>
+<button class="btn dark" onclick="window.print()">Print</button>
+<select id="previewLearner" style="width:auto;min-width:220px" onchange="renderPreview()"></select>
+</div>
+<div class="paperWrap"><div id="paperHost"></div></div>
+</div>
+
+</div>
+<div class="actions">
+<button id="backBtn" class="btn light" onclick="go(-1)">← Back</button>
+<button id="nextBtn" class="btn primary" onclick="go(1)">Next →</button>
+</div>
+</section>
+</div>
+</div>
+
+<div id="modal" class="modal">
+<div class="modalCard">
+<div class="modalHead"><h3 id="modalTitle">Add Questions</h3><button class="x" onclick="closeModal()">×</button></div>
+<div class="modalBody" id="modalBody"></div>
+<div class="modalFoot"><button class="btn light" onclick="closeModal()">Close</button><button class="btn blue" onclick="addQuestions()">Add Questions</button></div>
+</div>
+</div>
+
+<script>
+const state={
+ step:1,
+ name:'',
+ headers:[
+  {usage:'Name',enabled:true,label:'Name',width:'Large'},
+  {usage:'Quiz',enabled:false,label:'Quiz',width:'Medium'},
+  {usage:'Class',enabled:true,label:'Section',width:'Medium'},
+  {usage:'Other 1',enabled:false,label:'Score',width:'Medium'},
+  {usage:'Other 2',enabled:false,label:'',width:'Medium'},
+  {usage:'Other 3',enabled:false,label:'',width:'Medium'}
+ ],
+ mode:'blank',includeId:false,idDigits:5,idLabel:'Student ID',
+ learners:[],questions:[]
+};
+let modalType='mcq';
+
+const titles={
+1:['Step 1 of 5: Answer Sheet Name','Give this reusable answer sheet a clear name.'],
+2:['Step 2 of 5: Header Boxes','Choose which information boxes appear at the top of the printed sheet.'],
+3:['Step 3 of 5: Student Information','Choose blank or personalized sheets. Student ID remains optional.'],
+4:['Step 4 of 5: Define Questions','Add and mix multiple-choice, true/false, word, and numerical items.'],
+5:['Step 5 of 5: Preview & Print','Review the final A4 answer sheet before printing.']
+};
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function collect(){
+ state.name=document.getElementById('sheetName').value.trim();
+ state.mode=document.querySelector('input[name=mode]:checked')?.value||'blank';
+ state.includeId=includeId.checked; state.idDigits=Number(idDigits.value); state.idLabel=idLabel.value.trim()||'Student ID';
+ state.learners=learnerList.value.split(/\n+/).map(x=>x.trim()).filter(Boolean).map(line=>{let p=line.split('|').map(x=>x.trim());return{name:p[0]||'',section:p[1]||''}});
+ document.querySelectorAll('#headerRows tr').forEach((tr,i)=>{state.headers[i].enabled=tr.querySelector('.h-enabled').checked;state.headers[i].label=tr.querySelector('.h-label').value;state.headers[i].width=tr.querySelector('.h-width').value});
+ saveDraft();
+}
+function saveDraft(){try{localStorage.setItem('smartScannerAnswerSheetDraft',JSON.stringify(state))}catch(e){}}
+function loadDraft(){try{const x=JSON.parse(localStorage.getItem('smartScannerAnswerSheetDraft'));if(x&&x.headers&&x.questions)Object.assign(state,x)}catch(e){}}
+function init(){
+ loadDraft(); sheetName.value=state.name||''; renderHeaderRows();
+ document.querySelectorAll('input[name=mode]').forEach(r=>r.checked=r.value===state.mode);
+ includeId.checked=!!state.includeId;idDigits.value=state.idDigits||5;idLabel.value=state.idLabel||'Student ID';
+ learnerList.value=(state.learners||[]).map(x=>x.name+(x.section?' | '+x.section:'')).join('\n');
+ syncStudentOptions();renderQuestions();showStep(1);
+}
+function renderHeaderRows(){
+ headerRows.innerHTML=state.headers.map((h,i)=>`<tr><td><b>${esc(h.usage)}</b></td><td class="center"><input class="check h-enabled" type="checkbox" ${h.enabled?'checked':''}></td><td><input class="h-label" type="text" value="${esc(h.label)}"></td><td><select class="h-width"><option ${h.width==='Small'?'selected':''}>Small</option><option ${h.width==='Medium'?'selected':''}>Medium</option><option ${h.width==='Large'?'selected':''}>Large</option></select></td></tr>`).join('');
+}
+function syncStudentOptions(){
+ idOptions.classList.toggle('hidden',!includeId.checked);
+ personalizedOptions.classList.toggle('hidden',(document.querySelector('input[name=mode]:checked')?.value||'blank')!=='personalized');
+}
+includeId.addEventListener('change',syncStudentOptions);document.querySelectorAll('input[name=mode]').forEach(x=>x.addEventListener('change',syncStudentOptions));
+function go(dir){
+ if(state.step===1&&dir>0&&!sheetName.value.trim()){sheetName.focus();alert('Please enter an Answer Sheet Name first.');return}
+ collect();let n=Math.max(1,Math.min(5,state.step+dir));showStep(n);
+}
+function showStep(n){
+ state.step=n;document.querySelectorAll('.stepPane').forEach(x=>x.classList.add('hidden'));document.getElementById('step'+n).classList.remove('hidden');
+ document.querySelectorAll('.stepBtn').forEach(b=>{const s=Number(b.dataset.step);b.classList.toggle('active',s===n);b.classList.toggle('done',s<n)});
+ stepTitle.textContent=titles[n][0];stepDesc.textContent=titles[n][1];backBtn.style.visibility=n===1?'hidden':'visible';nextBtn.textContent=n===5?'Done':'Next →';nextBtn.onclick=n===5?()=>alert('Answer Sheet setup saved in this browser.'):()=>go(1);
+ document.querySelectorAll('[data-sheet-label]').forEach(x=>x.textContent=state.name||'Untitled Sheet');
+ if(n===4)renderQuestions();if(n===5){buildPreviewLearners();renderPreview()}
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.stepBtn').forEach(b=>b.addEventListener('click',()=>{collect();showStep(Number(b.dataset.step))}));
+
+function openModal(type){
+ modalType=type;let body='',title='';
+ if(type==='mcq'){title='Add multiple-choice questions';body=`
+ <label>Number of Questions</label><select id="mCount">${Array.from({length:50},(_,i)=>`<option>${i+1}</option>`).join('')}</select>
+ <label>Answer Labels</label><input id="mLabels" class="field" value="ABCD" maxlength="10"><div class="help">Enter labels without spaces, e.g. ABCD, ABCDE, or TF.</div>`;}
+ if(type==='tf'){title='Add True / False questions';body=`<label>Number of Questions</label><select id="mCount">${Array.from({length:50},(_,i)=>`<option>${i+1}</option>`).join('')}</select><label>Answer Labels</label><input id="mLabels" class="field" value="TF" maxlength="4">`;}
+ if(type==='word'){title='Add word / text questions';body=`<label>Number of Questions</label><select id="mCount">${Array.from({length:20},(_,i)=>`<option>${i+1}</option>`).join('')}</select><label>Number of Character Boxes</label><select id="mBoxes">${Array.from({length:10},(_,i)=>`<option>${i+3}</option>`).join('')}</select><div class="help">Students write one letter/character in each box.</div>`;}
+ if(type==='num'){title='Add numerical entry questions';body=`
+ <label>Number of Questions</label><select id="mCount">${Array.from({length:20},(_,i)=>`<option>${i+1}</option>`).join('')}</select>
+ <div class="grid2"><div><label>Number of Digits / Boxes</label><select id="mBoxes">${Array.from({length:9},(_,i)=>`<option>${i+2}</option>`).join('')}</select></div><div><label>Has Negative Sign?</label><select id="mNeg"><option>No</option><option>Yes</option></select></div></div>
+ <div class="grid3"><div><label>Decimal Point?</label><select id="mDec"><option>No</option><option>Yes</option></select></div><div><label>Fraction Bar?</label><select id="mFrac"><option>No</option><option>Yes</option></select></div><div><label>Scientific notation (e)?</label><select id="mSci"><option>No</option><option>Yes</option></select></div></div>
+ <div class="help">Numerical answers remain box-style writing fields; no 0–9 bubble grid.</div>`;}
+ modalTitle.textContent=title;modalBody.innerHTML=body;modal.classList.add('show');
+}
+function closeModal(){modal.classList.remove('show')}
+function addQuestions(){
+ const count=Number(document.getElementById('mCount')?.value||1);
+ for(let i=0;i<count;i++){
+  if(modalType==='mcq'||modalType==='tf')state.questions.push({type:modalType,labels:(document.getElementById('mLabels').value||'ABCD').replace(/\s+/g,'').toUpperCase().slice(0,10)});
+  if(modalType==='word')state.questions.push({type:'word',boxes:Number(document.getElementById('mBoxes').value||6)});
+  if(modalType==='num')state.questions.push({type:'num',boxes:Number(document.getElementById('mBoxes').value||4),neg:mNeg.value==='Yes',dec:mDec.value==='Yes',frac:mFrac.value==='Yes',sci:mSci.value==='Yes'});
+ }
+ saveDraft();closeModal();renderQuestions();
+}
+function fmt(q){
+ if(q.type==='mcq')return q.labels.split('').join(' ');
+ if(q.type==='tf')return q.labels.split('').join(' ');
+ if(q.type==='word')return q.boxes+' character boxes';
+ if(q.type==='num'){let a=[q.boxes+' boxes'];if(q.neg)a.push('negative');if(q.dec)a.push('decimal');if(q.frac)a.push('fraction');if(q.sci)a.push('scientific');return a.join(' • ')}
+ return '';
+}
+function typeName(q){return q.type==='mcq'?'Multiple Choice':q.type==='tf'?'True / False':q.type==='word'?'Word / Text':'Numerical'}
+function renderQuestions(){
+ questionEmpty.classList.toggle('hidden',state.questions.length>0);questionTable.classList.toggle('hidden',state.questions.length===0);
+ questionRows.innerHTML=state.questions.map((q,i)=>`<tr><td class="center">${i+1}</td><td>${typeName(q)}</td><td>${esc(fmt(q))}</td><td class="center"><input class="check qsel" type="checkbox" data-i="${i}"></td></tr>`).join('');
+}
+function removeSelected(){const sel=new Set([...document.querySelectorAll('.qsel:checked')].map(x=>Number(x.dataset.i)));if(!sel.size)return;state.questions=state.questions.filter((_,i)=>!sel.has(i));saveDraft();renderQuestions()}
+
+function buildPreviewLearners(){
+ let options='<option value="">Blank / Generic Preview</option>';
+ if(state.mode==='personalized')options+=(state.learners||[]).map((l,i)=>`<option value="${i}">${esc(l.name)}${l.section?' — '+esc(l.section):''}</option>`).join('');
+ previewLearner.innerHTML=options;
+}
+function widthSpan(w){return w==='Large'?6:w==='Small'?2:4}
+function renderPreview(){
+ collect();
+ const idx=previewLearner.value;const learner=idx!==''&&state.learners[Number(idx)]?state.learners[Number(idx)]:null;
+ let info=state.headers.filter(h=>h.enabled).map(h=>{
+  let value='';
+  if(learner&&h.usage==='Name')value=learner.name;
+  if(learner&&h.usage==='Class')value=learner.section;
+  return `<div class="infoBox" style="grid-column:span ${widthSpan(h.width)}"><b>${esc(h.label||h.usage)}</b>${esc(value)}</div>`;
+ }).join('');
+ if(state.includeId)info+=`<div class="infoBox" style="grid-column:span 4"><b>${esc(state.idLabel)}</b></div>`;
+
+ const groups=[];let cur=null;
+ state.questions.forEach((q,i)=>{
+  const key=q.type+'|'+JSON.stringify(q);
+  if(!cur||cur.key!==key){cur={key,type:q.type,q,items:[]};groups.push(cur)}
+  cur.items.push(i+1);
+ });
+ const sections=groups.map(g=>{
+  if(g.type==='mcq'||g.type==='tf'){
+   let labels=g.q.labels.split('');
+   let rows=g.items.map(n=>`<div class="mcqRow"><b>${n}.</b>${labels.map(x=>`<span class="bubble">${esc(x)}</span>`).join('')}</div>`).join('');
+   return `<section class="answerSec"><h4>${g.type==='tf'?'TRUE / FALSE':'MULTIPLE CHOICE'} <span class="tiny">• ${esc(g.q.labels)}</span></h4><div class="body">${rows}</div></section>`;
+  } else {
+   let rows=g.items.map(n=>`<div class="boxRow"><b>${n}.</b><div class="boxes">${Array.from({length:g.q.boxes},()=>'<span class="box"></span>').join('')}</div></div>`).join('');
+   let note=g.type==='word'?'Write one character per box.':'Write one numerical character per box.';
+   if(g.type==='num'){let x=[];if(g.q.neg)x.push('−');if(g.q.dec)x.push('decimal');if(g.q.frac)x.push('fraction');if(g.q.sci)x.push('e');if(x.length)note+=' Allowed: '+x.join(', ')+'.'}
+   return `<section class="answerSec"><h4>${g.type==='word'?'WORD / TEXT':'NUMERICAL'} <span class="tiny">• ${esc(note)}</span></h4><div class="body">${rows}</div></section>`;
+  }
+ }).join('');
+ paperHost.innerHTML=`<div class="paper">
+ <span class="corner c1"></span><span class="corner c2"></span><span class="corner c3"></span><span class="corner c4"></span>
+ <div class="pHead"><h1>SMART SCANNER</h1><p>${esc(state.name||'ANSWER SHEET')} • ${state.questions.length} ITEMS</p></div>
+ <div class="infoGrid">${info}</div>
+ <div class="answerSections">${sections||'<div class="empty">No questions added yet.</div>'}</div>
+ <div class="footer">SMART Scanner • Answer Sheet Builder</div></div>`;
+ scalePaper();
+}
+function scalePaper(){const p=document.querySelector('.paper');if(!p)return;const host=paperHost.parentElement;const available=host.clientWidth-36;const natural=794;const s=Math.min(1,available/natural);p.style.transform=`scale(${s})`;p.style.transformOrigin='top left';host.style.height=(1123*s+36)+'px'}
+window.addEventListener('resize',()=>{if(state.step===5)scalePaper()});
+init();
+</script>
+</body>
+</html>
