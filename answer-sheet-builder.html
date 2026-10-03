@@ -47,6 +47,38 @@ body.print-batch .printSlot .paper{position:absolute!important;left:0!important;
 body.print-batch .printPage.one .paper{transform:scale(1)!important}
 body.print-batch .printPage.two .paper{transform:scale(.70710678)!important}
 body.print-batch .printPage.four .paper{transform:scale(.5)!important}
+
+/* A6 / 4-up optimized: use more of each quarter-page so bubbles do not become too tiny */
+body.print-batch .printPage.four .paper{padding:8mm 8mm 8mm!important}
+body.print-batch .printPage.four .paper .corner{width:8mm!important;height:8mm!important}
+body.print-batch .printPage.four .paper .c1{left:5mm!important;top:5mm!important}
+body.print-batch .printPage.four .paper .c2{right:5mm!important;top:5mm!important}
+body.print-batch .printPage.four .paper .c3{left:5mm!important;bottom:5mm!important}
+body.print-batch .printPage.four .paper .c4{right:5mm!important;bottom:5mm!important}
+body.print-batch .printPage.four .paper .pHead{margin:0 7mm 2.5mm!important}
+body.print-batch .printPage.four .paper .pHead h1{font-size:21pt!important}
+body.print-batch .printPage.four .paper .pHead p{font-size:10pt!important;margin-top:1mm!important}
+body.print-batch .printPage.four .paper .studentHeader{grid-template-columns:minmax(0,1fr) 54mm!important;gap:2mm!important;margin:0 1mm 2.5mm!important}
+body.print-batch .printPage.four .paper .studentLeft,
+body.print-batch .printPage.four .paper .studentRight{gap:1.5mm!important}
+body.print-batch .printPage.four .paper .infoBox{padding:1.6mm!important;min-height:13mm!important;font-size:8pt!important}
+body.print-batch .printPage.four .paper .infoBox.studentInfoBox{height:17mm!important}
+body.print-batch .printPage.four .paper .studentValue.size-xl{font-size:18pt!important}
+body.print-batch .printPage.four .paper .studentValue.size-lg{font-size:16pt!important}
+body.print-batch .printPage.four .paper .studentValue.size-md{font-size:14pt!important}
+body.print-batch .printPage.four .paper .studentValue.size-sm{font-size:11pt!important}
+body.print-batch .printPage.four .paper .infoBox.scoreBox{min-height:19mm!important}
+body.print-batch .printPage.four .paper .infoBox.scoreBox .scoreLine{font-size:18pt!important}
+body.print-batch .printPage.four .paper .extraInfoGrid{gap:1.5mm!important;margin-top:1.5mm!important}
+body.print-batch .printPage.four .paper .answerSections{gap:2.5mm!important}
+body.print-batch .printPage.four .paper .answerSec h4{padding:1.5mm 2mm!important;font-size:9pt!important}
+body.print-batch .printPage.four .paper .answerSec .body{padding:1.5mm 2mm!important}
+body.print-batch .printPage.four .paper .mcqRow{grid-template-columns:8mm repeat(10,8mm)!important;gap:1.1mm!important;min-height:8.4mm!important;font-size:9pt!important}
+body.print-batch .printPage.four .paper .bubble{width:7.2mm!important;height:7.2mm!important;border-width:.6mm!important;font-size:7.5pt!important}
+body.print-batch .printPage.four .paper .boxRow{grid-template-columns:8mm 1fr!important;gap:1.5mm!important;min-height:9mm!important;font-size:9pt!important}
+body.print-batch .printPage.four .paper .box{width:9mm!important;height:9mm!important;border-width:.55mm!important}
+body.print-batch .printPage.four .paper .tiny{font-size:7pt!important}
+body.print-batch .printPage.four .paper .footer{font-size:6.5pt!important;margin-top:1.5mm!important}
 body.print-batch .printSlot{outline:.2mm dashed #bbb}
 body.print-batch .printSlot.empty{outline:none}
 }
