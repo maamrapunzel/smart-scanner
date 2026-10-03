@@ -45,26 +45,73 @@ body.print-batch .printPage.two{width:297mm;height:210mm;grid-template-columns:1
 body.print-batch .printPage.four{width:210mm;height:297mm;grid-template-columns:105mm 105mm;grid-template-rows:148.5mm 148.5mm}
 body.print-batch .printSlot .paper{position:absolute!important;left:0!important;top:0!important;margin:0!important;box-shadow:none!important;page-break-after:auto!important;transform-origin:top left!important}
 body.print-batch .printPage.one .paper{transform:scale(1)!important}
-body.print-batch .printPage.two .paper{transform:scale(.70710678)!important}
+body.print-batch .printPage.two .paper{transform:none!important;width:148.5mm!important;height:210mm!important}
 body.print-batch .printPage.four .paper{transform:scale(.5)!important}
 
-/* A5 / 2-up optimized: use the full A5 height instead of simply shrinking the A4 preview */
-body.print-batch .printPage.two .paper.longBubbleSheet{padding:8mm 9mm 8mm!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .pHead{margin:0 7mm 2mm!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .pHead h1{font-size:19pt!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .pHead p{font-size:9pt!important;margin-top:.8mm!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .studentHeader{grid-template-columns:minmax(0,1fr) 50mm!important;gap:2mm!important;margin:0 1mm 2mm!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .studentLeft,
-body.print-batch .printPage.two .paper.longBubbleSheet .studentRight{gap:1.4mm!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .infoBox{padding:1.5mm!important;min-height:11mm!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .infoBox.studentInfoBox{height:14mm!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .infoBox.scoreBox{min-height:17mm!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .answerSections{min-height:205mm!important;gap:3mm!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .answerSec h4{padding:1.4mm 2mm!important;font-size:8.5pt!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .answerSec .body{padding:1mm 2mm!important;display:grid!important;grid-auto-rows:minmax(0,1fr)!important;justify-content:stretch!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .mcqRow{grid-template-columns:8mm repeat(10,7.5mm)!important;gap:1.1mm!important;min-height:0!important;height:auto!important;font-size:8.5pt!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .bubble{width:6.2mm!important;height:6.2mm!important;border-width:.55mm!important;font-size:7pt!important}
-body.print-batch .printPage.two .paper.longBubbleSheet .footer{font-size:6pt!important;margin-top:1mm!important}
+/* A5 / 2-up native layout: render directly at A5 size */
+body.print-batch .printPage.two .paper{padding:6mm 6mm 6mm!important}
+body.print-batch .printPage.two .paper .corner{width:5mm!important;height:5mm!important}
+body.print-batch .printPage.two .paper .c1{left:3mm!important;top:3mm!important}
+body.print-batch .printPage.two .paper .c2{right:3mm!important;top:3mm!important}
+body.print-batch .printPage.two .paper .c3{left:3mm!important;bottom:3mm!important}
+body.print-batch .printPage.two .paper .c4{right:3mm!important;bottom:3mm!important}
+body.print-batch .printPage.two .paper .pHead{margin:0 5mm 1.5mm!important}
+body.print-batch .printPage.two .paper .pHead h1{font-size:12pt!important}
+body.print-batch .printPage.two .paper .pHead p{font-size:5.5pt!important;margin:.5mm 0 0!important}
+body.print-batch .printPage.two .paper .studentHeader{grid-template-columns:minmax(0,1fr) 31mm!important;gap:1.4mm!important;margin:0 0 1.8mm!important}
+body.print-batch .printPage.two .paper .studentLeft,
+body.print-batch .printPage.two .paper .studentRight{gap:1mm!important}
+body.print-batch .printPage.two .paper .infoBox{padding:1mm!important;min-height:8mm!important;font-size:5.3pt!important;border-radius:1mm!important}
+body.print-batch .printPage.two .paper .infoBox.studentInfoBox{height:10mm!important}
+body.print-batch .printPage.two .paper .studentValue.size-xl{font-size:10pt!important}
+body.print-batch .printPage.two .paper .studentValue.size-lg{font-size:9pt!important}
+body.print-batch .printPage.two .paper .studentValue.size-md{font-size:8pt!important}
+body.print-batch .printPage.two .paper .studentValue.size-sm{font-size:7pt!important}
+body.print-batch .printPage.two .paper .infoBox.scoreBox{min-height:11mm!important}
+body.print-batch .printPage.two .paper .infoBox.scoreBox .scoreLine{font-size:10pt!important;min-height:4mm!important}
+body.print-batch .printPage.two .paper .extraInfoGrid{gap:1mm!important;margin-top:1mm!important}
+body.print-batch .printPage.two .paper .answerSections{
+  grid-template-columns:1fr 1fr!important;
+  grid-template-rows:1fr!important;
+  gap:2mm!important;
+  flex:1!important;
+  min-height:0!important;
+  align-items:stretch!important
+}
+body.print-batch .printPage.two .paper .answerSec{
+  height:100%!important;
+  min-height:0!important;
+  border-radius:1.5mm!important
+}
+body.print-batch .printPage.two .paper .answerSec h4{
+  padding:1mm 1.3mm!important;
+  font-size:5.5pt!important;
+  line-height:1!important
+}
+body.print-batch .printPage.two .paper .answerSec .body{
+  padding:1mm 1.3mm!important;
+  display:grid!important;
+  grid-template-rows:repeat(25,1fr)!important;
+  justify-content:stretch!important;
+  min-height:0!important;
+  overflow:visible!important
+}
+body.print-batch .printPage.two .paper .mcqRow{
+  grid-template-columns:5mm repeat(4,5.6mm)!important;
+  gap:.7mm!important;
+  min-height:0!important;
+  height:auto!important;
+  font-size:5.6pt!important;
+  line-height:1!important
+}
+body.print-batch .printPage.two .paper .bubble{
+  width:4.4mm!important;
+  height:4.4mm!important;
+  border-width:.35mm!important;
+  font-size:4.5pt!important
+}
+body.print-batch .printPage.two .paper .tiny{font-size:4.5pt!important}
+body.print-batch .printPage.two .paper .footer{font-size:4.5pt!important;margin-top:1mm!important;flex:0 0 auto!important}
 
 /* A6 / 4-up optimized: use more of each quarter-page so bubbles do not become too tiny */
 body.print-batch .printPage.four .paper{padding:8mm 8mm 8mm!important}
@@ -107,7 +154,7 @@ body.print-batch .printSlot.empty{outline:none}
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
-<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Answer Sheet Builder</small></div><div class="spacer"></div><span class="pill">GitHub Preview</span></header>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Answer Sheet Builder</small></div><div class="spacer"></div><span class="pill">GitHub Preview • A5-NATIVE-2UP</span></header>
 <div class="wrap">
 <div class="wizard">
 <nav class="steps">
