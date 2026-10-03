@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SMART Scanner — Answer Key Builder</title>
+<style>
+:root{--ink:#252126;--muted:#756d74;--line:#e3dce1;--bg:#f6f3f5;--panel:#fff;--pink:#eb4f90;--pink2:#fff1f7;--dark:#1e1a1d;--blue:#3d8ed8;--green:#228e62;--amber:#b87911}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+button,input,select,textarea{font:inherit}
+.topbar{height:62px;background:var(--dark);color:#fff;display:flex;align-items:center;padding:0 18px;gap:12px;position:sticky;top:0;z-index:30}
+.logo{width:38px;height:38px;border-radius:10px;background:var(--pink);display:grid;place-items:center;font-weight:900}
+.brand b{display:block}.brand small{color:#cfc7cc}.spacer{flex:1}.pill{border:1px solid #ffffff35;border-radius:999px;padding:6px 10px;font-size:11px}
+.wrap{max-width:1100px;margin:22px auto;padding:0 16px 50px}
+.hero{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;margin-bottom:16px}
+.hero h1{font-size:25px;margin:0 0 6px}.hero p{margin:0;color:var(--muted);line-height:1.5}
+.btn{border:0;border-radius:10px;padding:10px 15px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.primary{background:var(--pink);color:#fff}.btn.dark{background:var(--dark);color:#fff}.btn.light{background:#eee8ec;color:#3b3338}.btn.green{background:var(--green);color:#fff}.btn.blue{background:var(--blue);color:#fff}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px #6a48550d;margin-bottom:16px;overflow:hidden}
+.cardHead{padding:14px 17px;border-bottom:1px solid var(--line);background:#fcfafb;display:flex;align-items:center;gap:10px}
+.cardHead h2{margin:0;font-size:17px}.cardBody{padding:17px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+label{display:block;font-size:12px;font-weight:800;margin:0 0 6px}
+.field,select,textarea{width:100%;border:1px solid #d9d0d5;border-radius:10px;padding:10px 11px;background:#fff}
+.help{font-size:12px;color:var(--muted);line-height:1.45;margin-top:6px}
+.sourceSummary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.metric{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+.metric small{display:block;color:var(--muted);font-size:11px;margin-bottom:3px}.metric b{font-size:18px}
+.notice{border:1px solid #ead6a9;background:#fff9e8;color:#705214;padding:12px;border-radius:11px;font-size:12px;line-height:1.45}
+.empty{padding:34px;text-align:center;border:1px dashed #d7cbd2;border-radius:12px;color:var(--muted)}
+.keyList{display:flex;flex-direction:column;gap:10px}
+.keyItem{border:1px solid #ded6db;border-radius:13px;background:#fff;overflow:hidden}
+.keyTop{display:grid;grid-template-columns:70px 190px minmax(0,1fr) 115px;gap:10px;align-items:center;padding:11px 12px}
+.itemNo{font-size:17px;font-weight:900}.typeTag{display:inline-block;border-radius:999px;background:#f0eaee;padding:5px 8px;font-size:11px;font-weight:800;color:#544b50}
+.points{display:flex;align-items:center;gap:6px}.points input{width:68px;border:1px solid #d9d0d5;border-radius:8px;padding:7px;text-align:center}
+.answerArea{min-width:0}
+.choiceRow{display:flex;flex-wrap:wrap;gap:8px}
+.choice{min-width:44px;height:40px;border-radius:20px;border:2px solid #bbb2b7;background:#fff;font-weight:900;cursor:pointer}
+.choice:hover{border-color:var(--pink)}.choice.selected{background:var(--pink);border-color:var(--pink);color:#fff}
+.answerInput{width:100%;border:1px solid #d7cfd3;border-radius:9px;padding:9px 10px}
+.coordGrid{display:grid;grid-template-columns:minmax(120px,.7fr) minmax(180px,1.3fr);gap:10px}
+.coordGrid label{font-size:10px;color:var(--muted);margin-bottom:4px}
+.itemNote{border-top:1px solid #eee8eb;background:#fcfafb;padding:7px 12px;color:var(--muted);font-size:11px}
+.keyItem.unanswered{border-color:#e5a3a3;background:#fffafa}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar .spacer{flex:1}
+.progress{font-size:12px;color:var(--muted);font-weight:700}
+.success{border:1px solid #a9dcc9;background:#f1fff9;color:#176448;padding:11px 12px;border-radius:10px;font-size:12px;display:none;margin-top:12px}
+.danger{border:1px solid #efc1c1;background:#fff4f4;color:#8b3131;padding:11px 12px;border-radius:10px;font-size:12px;display:none;margin-top:12px}
+@media(max-width:820px){
+ .hero{grid-template-columns:1fr}.sourceSummary{grid-template-columns:1fr 1fr}.grid2,.grid3{grid-template-columns:1fr}
+ .keyTop{grid-template-columns:52px 1fr}.answerArea{grid-column:1/-1}.points{grid-column:1/-1;justify-content:flex-end}.coordGrid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+ <div class="logo">SS</div>
+ <div class="brand"><b>SMART SCANNER</b><small>Answer Key Builder</small></div>
+ <div class="spacer"></div>
+ <span class="pill">KEY-BUILDER-V1</span>
+</header>
+
+<main class="wrap">
+ <div class="hero">
+  <div>
+   <h1>Create Answer Key</h1>
+   <p>The question structure comes directly from the Answer Sheet. You only enter the correct answers and points.</p>
+  </div>
+  <a class="btn light" href="./answer-sheet-builder.html">← Back to Answer Sheet</a>
+ </div>
+
+ <section class="card">
+  <div class="cardHead"><h2>1. Answer Sheet Source</h2></div>
+  <div class="cardBody">
+   <div class="grid2">
+    <div>
+     <label>Answer Sheet</label>
+     <select id="sheetSelect"></select>
+     <div class="help">For now, this loads the finalized Answer Sheet saved in this browser. Multiple saved forms can be added later without changing the key format.</div>
+    </div>
+    <div>
+     <label>Answer Key Name</label>
+     <input id="keyName" class="field" placeholder="e.g. Term 2 Summative 1 — Key">
+    </div>
+   </div>
+   <div id="sourceStats" class="sourceSummary"></div>
+   <div id="sourceNotice" class="notice" style="margin-top:12px"></div>
+  </div>
+ </section>
+
+ <section class="card">
+  <div class="cardHead">
+   <h2>2. Enter Correct Answers</h2>
+   <div class="spacer"></div>
+   <span id="progressText" class="progress"></span>
+  </div>
+  <div class="cardBody">
+   <div id="noSheet" class="empty" style="display:none">
+    No Answer Sheet found in this browser. Create or open an Answer Sheet first.
+   </div>
+   <div id="keyList" class="keyList"></div>
+  </div>
+ </section>
+
+ <section class="card">
+  <div class="cardHead"><h2>3. Save Answer Key</h2></div>
+  <div class="cardBody">
+   <div class="toolbar">
+    <button class="btn light" type="button" onclick="clearAnswers()">Clear Answers</button>
+    <button class="btn blue" type="button" onclick="markUnanswered()">Check Unanswered</button>
+    <div class="spacer"></div>
+    <button class="btn green" type="button" onclick="saveAnswerKey()">Save Answer Key</button>
+   </div>
+   <div class="help">Accepted alternatives can be separated with a vertical bar <b>|</b>. Example: <b>0.5 | 1/2</b> or <b>Quadrant III | QIII</b>.</div>
+   <div id="saveSuccess" class="success"></div>
+   <div id="saveError" class="danger"></div>
+  </div>
+ </section>
+</main>
+
+<script>
+const DRAFT_KEY='smartScannerAnswerSheetDraft';
+const REGISTRY_KEY='smartScannerAnswerKeys';
+const state={sheet:null,entries:[],saved:null};
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function safeParse(s,fallback){try{return JSON.parse(s)}catch(e){return fallback}}
+function sheetSignature(sheet){
+ const core={name:sheet?.name||'',questions:sheet?.questions||[]};
+ return JSON.stringify(core);
+}
+function typeLabel(e){
+ return e.type==='mcq'?'Multiple Choice':
+ e.type==='tf'?'True / False':
+ e.type==='groupmcq'?'Grouped MCQ':
+ e.type==='word'?'Word / Text':
+ e.type==='num'?'Numerical':
+ e.type==='coord'?'Ordered Pair + Location':
+ e.type==='short'?'Short Answer':'Answer';
+}
+function responseCount(sheet){
+ return (sheet?.questions||[]).reduce((n,q)=>n+(q.type==='groupmcq'?Number(q.subCount||3):1),0);
+}
+function typeCount(sheet){
+ return new Set((sheet?.questions||[]).map(q=>q.type)).size;
+}
+function buildEntries(sheet){
+ const out=[],letters='abcdefghijklmnopqrstuvwxyz';
+ (sheet?.questions||[]).forEach((q,idx)=>{
+   const n=idx+1;
+   if(q.type==='groupmcq'){
+     const subCount=Math.max(1,Math.min(26,Number(q.subCount||3)));
+     for(let s=0;s<subCount;s++){
+       out.push({id:n+letters[s],display:n+letters[s],main:n,type:'groupmcq',labels:q.labels||'ABCD',answer:'',points:1});
+     }
+   }else if(q.type==='mcq'||q.type==='tf'){
+     out.push({id:String(n),display:String(n),main:n,type:q.type,labels:q.labels||(q.type==='tf'?'TF':'ABCD'),answer:'',points:1});
+   }else if(q.type==='coord'){
+     out.push({id:String(n),display:String(n),main:n,type:'coord',orderedPair:'',location:'',points:1});
+   }else{
+     out.push({id:String(n),display:String(n),main:n,type:q.type,answer:'',points:1,meta:q});
+   }
+ });
+ return out;
+}
+function loadRegistry(){
+ const x=safeParse(localStorage.getItem(REGISTRY_KEY),[]);
+ return Array.isArray(x)?x:[];
+}
+function findSavedForSheet(sheet){
+ const sig=sheetSignature(sheet);
+ return loadRegistry().find(k=>k.sourceSignature===sig)||null;
+}
+function restoreSaved(entries,saved){
+ if(!saved?.entries)return entries;
+ const map=new Map(saved.entries.map(e=>[String(e.id),e]));
+ return entries.map(e=>{
+   const old=map.get(String(e.id));
+   return old?{...e,...old,type:e.type,labels:e.labels||old.labels}:e;
+ });
+}
+function init(){
+ const sheet=safeParse(localStorage.getItem(DRAFT_KEY),null);
+ state.sheet=sheet&&Array.isArray(sheet.questions)?sheet:null;
+ sheetSelect.innerHTML=state.sheet
+   ? '<option value="current">'+esc(state.sheet.name||'Current Answer Sheet')+'</option>'
+   : '<option value="">No Answer Sheet Available</option>';
+
+ if(!state.sheet){
+   noSheet.style.display='block';
+   sourceStats.innerHTML='';
+   sourceNotice.innerHTML='Open the Answer Sheet Builder first, define the questions, then return here.';
+   keyName.value='';
+   progressText.textContent='';
+   return;
+ }
+
+ state.saved=findSavedForSheet(state.sheet);
+ state.entries=restoreSaved(buildEntries(state.sheet),state.saved);
+ keyName.value=state.saved?.name||((state.sheet.name||'Answer Sheet')+' — Key');
+
+ sourceStats.innerHTML=
+   '<div class="metric"><small>Sheet</small><b>'+esc(state.sheet.name||'Untitled')+'</b></div>'+
+   '<div class="metric"><small>Main Items</small><b>'+state.sheet.questions.length+'</b></div>'+
+   '<div class="metric"><small>Answer Entries</small><b>'+responseCount(state.sheet)+'</b></div>'+
+   '<div class="metric"><small>Question Types</small><b>'+typeCount(state.sheet)+'</b></div>';
+
+ sourceNotice.innerHTML=state.saved
+   ? 'A saved key for this Answer Sheet was found and loaded. You can edit it and save again.'
+   : 'Question types were loaded automatically from the current Answer Sheet. No need to define them again.';
+
+ renderEntries();
+}
+function choiceButtons(e,index){
+ const labels=String(e.labels||'ABCD').split('');
+ return '<div class="choiceRow">'+labels.map(x=>
+   '<button type="button" class="choice '+(e.answer===x?'selected':'')+'" onclick="setChoice('+index+',\''+String(x).replace(/'/g,"\\'")+'\')">'+esc(x)+'</button>'
+ ).join('')+'</div>';
+}
+function answerInput(e,index,placeholder){
+ return '<input class="answerInput" value="'+esc(e.answer||'')+'" oninput="setText('+index+',this.value)" placeholder="'+esc(placeholder)+'">';
+}
+function entryHTML(e,index){
+ let area='',note='';
+ if(e.type==='mcq'||e.type==='tf'||e.type==='groupmcq'){
+   area=choiceButtons(e,index);
+   note='Tap the correct choice.';
+ }else if(e.type==='coord'){
+   area='<div class="coordGrid">'+
+     '<div><label>Ordered Pair</label><input class="answerInput" value="'+esc(e.orderedPair||'')+'" oninput="setCoord('+index+',\'orderedPair\',this.value)" placeholder="e.g. (-3, 2)"></div>'+
+     '<div><label>Quadrant / Axis / Origin</label><input class="answerInput" value="'+esc(e.location||'')+'" oninput="setCoord('+index+',\'location\',this.value)" placeholder="e.g. Quadrant II | QII"></div>'+
+   '</div>';
+   note='Both fields belong to one item. Spaces in ordered pairs can be normalized by the scanner later.';
+ }else if(e.type==='num'){
+   area=answerInput(e,index,'e.g. -4 | -4.0');
+   note='You may enter equivalent accepted answers separated by |.';
+ }else if(e.type==='short'){
+   area=answerInput(e,index,'e.g. Quadrant III | QIII | III');
+   note='Use | for accepted variants when needed.';
+ }else{
+   area=answerInput(e,index,'Enter the correct answer');
+   note='Use | for accepted variants when needed.';
+ }
+ return '<div class="keyItem" id="entry-'+index+'">'+
+   '<div class="keyTop">'+
+    '<div class="itemNo">'+esc(e.display)+'.</div>'+
+    '<div><span class="typeTag">'+esc(typeLabel(e))+'</span></div>'+
+    '<div class="answerArea">'+area+'</div>'+
+    '<div class="points"><label style="margin:0">Points</label><input type="number" min="0" step="0.5" value="'+Number(e.points??1)+'" onchange="setPoints('+index+',this.value)"></div>'+
+   '</div>'+
+   '<div class="itemNote">'+esc(note)+'</div>'+
+ '</div>';
+}
+function renderEntries(){
+ keyList.innerHTML=state.entries.map(entryHTML).join('');
+ updateProgress();
+}
+function setChoice(i,v){state.entries[i].answer=v;renderEntries()}
+function setText(i,v){state.entries[i].answer=v;updateProgress()}
+function setCoord(i,k,v){state.entries[i][k]=v;updateProgress()}
+function setPoints(i,v){const n=Number(v);state.entries[i].points=Number.isFinite(n)&&n>=0?n:1;updateProgress()}
+function isAnswered(e){
+ if(e.type==='coord')return String(e.orderedPair||'').trim()!==''&&String(e.location||'').trim()!=='';
+ return String(e.answer||'').trim()!=='';
+}
+function updateProgress(){
+ const answered=state.entries.filter(isAnswered).length;
+ const total=state.entries.length;
+ const points=state.entries.reduce((s,e)=>s+Number(e.points||0),0);
+ progressText.textContent=answered+' / '+total+' answered • '+points+' total points';
+ document.querySelectorAll('.keyItem').forEach((el,i)=>el.classList.toggle('unanswered',el.classList.contains('checked-unanswered')&&!isAnswered(state.entries[i])));
+}
+function markUnanswered(){
+ state.entries.forEach((e,i)=>{
+   const el=document.getElementById('entry-'+i);
+   if(!el)return;
+   el.classList.add('checked-unanswered');
+   el.classList.toggle('unanswered',!isAnswered(e));
+ });
+ const first=state.entries.findIndex(e=>!isAnswered(e));
+ if(first>=0)document.getElementById('entry-'+first)?.scrollIntoView({behavior:'smooth',block:'center'});
+ else alert('All answer key entries are complete.');
+}
+function clearAnswers(){
+ if(!confirm('Clear all entered answers in this Answer Key?'))return;
+ state.entries=state.entries.map(e=>e.type==='coord'?{...e,orderedPair:'',location:''}:{...e,answer:''});
+ renderEntries();
+}
+function saveAnswerKey(){
+ saveSuccess.style.display='none';saveError.style.display='none';
+ if(!state.sheet){saveError.textContent='No Answer Sheet is loaded.';saveError.style.display='block';return}
+ const name=keyName.value.trim()||((state.sheet.name||'Answer Sheet')+' — Key');
+ const unanswered=state.entries.filter(e=>!isAnswered(e)).length;
+ if(unanswered&&!confirm(unanswered+' answer entr'+(unanswered===1?'y is':'ies are')+' still blank. Save anyway?'))return;
+
+ const now=new Date().toISOString();
+ const key={
+   id:state.saved?.id||('key-'+Date.now()),
+   name,
+   sourceSheetName:state.sheet.name||'Untitled Answer Sheet',
+   sourceSignature:sheetSignature(state.sheet),
+   sourceQuestions:state.sheet.questions,
+   entries:state.entries,
+   totalPoints:state.entries.reduce((s,e)=>s+Number(e.points||0),0),
+   updatedAt:now,
+   createdAt:state.saved?.createdAt||now
+ };
+ let registry=loadRegistry();
+ const ix=registry.findIndex(x=>x.id===key.id||x.sourceSignature===key.sourceSignature);
+ if(ix>=0)registry[ix]=key;else registry.push(key);
+ localStorage.setItem(REGISTRY_KEY,JSON.stringify(registry));
+ localStorage.setItem('smartScannerCurrentAnswerKey',JSON.stringify(key));
+ state.saved=key;
+ saveSuccess.textContent='Answer Key saved. '+state.entries.length+' answer entries • '+key.totalPoints+' total points.';
+ saveSuccess.style.display='block';
+}
+init();
+</script>
+</body>
+</html>
