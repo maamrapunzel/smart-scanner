@@ -40,7 +40,7 @@ label{display:block;font-size:12px;font-weight:800;margin:0 0 6px}
 .choice:hover{border-color:var(--pink)}.choice.selected{background:var(--pink);border-color:var(--pink);color:#fff}
 .answerInput{width:100%;border:1px solid #d7cfd3;border-radius:9px;padding:9px 10px}
 .coordGrid{display:grid;grid-template-columns:minmax(120px,.7fr) minmax(180px,1.3fr);gap:10px}
-.coordGrid label{font-size:10px;color:var(--muted);margin-bottom:4px}
+.coordGrid label{font-size:10px;color:var(--muted);margin-bottom:4px}.numericValues{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:7px}.numericValue label{font-size:10px;color:var(--muted);margin-bottom:3px}
 .itemNote{border-top:1px solid #eee8eb;background:#fcfafb;padding:7px 12px;color:var(--muted);font-size:11px}
 .keyItem.unanswered{border-color:#e5a3a3;background:#fffafa}
 .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -59,7 +59,7 @@ label{display:block;font-size:12px;font-weight:800;margin:0 0 6px}
  <div class="logo">SS</div>
  <div class="brand"><b>SMART SCANNER</b><small>Answer Key Builder</small></div>
  <div class="spacer"></div>
- <span class="pill">KEY-BUILDER-V1</span>
+ <span class="pill">KEY-BUILDER-V2</span>
 </header>
 
 <main class="wrap">
@@ -159,6 +159,8 @@ function buildEntries(sheet){
      out.push({id:String(n),display:String(n),main:n,type:q.type,labels:q.labels||(q.type==='tf'?'TF':'ABCD'),answer:'',points:1});
    }else if(q.type==='coord'){
      out.push({id:String(n),display:String(n),main:n,type:'coord',orderedPair:'',location:'',points:1});
+   }else if(q.type==='num'&&q.entryMode==='value'){
+     out.push({id:String(n),display:String(n),main:n,type:'num',entryMode:'value',values:Array.from({length:Number(q.boxes||1)},()=>''),points:1,meta:q});
    }else{
      out.push({id:String(n),display:String(n),main:n,type:q.type,answer:'',points:1,meta:q});
    }
@@ -233,6 +235,11 @@ function entryHTML(e,index){
      '<div><label>Quadrant / Axis / Origin</label><input class="answerInput" value="'+esc(e.location||'')+'" oninput="setCoord('+index+',\'location\',this.value)" placeholder="e.g. Quadrant II | QII"></div>'+
    '</div>';
    note='Both fields belong to one item. Spaces in ordered pairs can be normalized by the scanner later.';
+ }else if(e.type==='num'&&e.entryMode==='value'){
+   area='<div class="numericValues">'+(e.values||[]).map((v,vi)=>
+     '<div class="numericValue"><label>Value '+(vi+1)+'</label><input class="answerInput" value="'+esc(v||'')+'" oninput="setNumValue('+index+','+vi+',this.value)" placeholder="'+(vi===0?'d/r or value 1':'Value '+(vi+1))+'"></div>'
+   ).join('')+'</div>';
+   note='One complete numerical value per box. For a sequence, Value 1 can be the common difference/ratio and the remaining values the next terms.';
  }else if(e.type==='num'){
    area=answerInput(e,index,'e.g. -4 | -4.0');
    note='You may enter equivalent accepted answers separated by |.';
@@ -260,9 +267,11 @@ function renderEntries(){
 function setChoice(i,v){state.entries[i].answer=v;renderEntries()}
 function setText(i,v){state.entries[i].answer=v;updateProgress()}
 function setCoord(i,k,v){state.entries[i][k]=v;updateProgress()}
+function setNumValue(i,vi,v){if(!Array.isArray(state.entries[i].values))state.entries[i].values=[];state.entries[i].values[vi]=v;updateProgress()}
 function setPoints(i,v){const n=Number(v);state.entries[i].points=Number.isFinite(n)&&n>=0?n:1;updateProgress()}
 function isAnswered(e){
  if(e.type==='coord')return String(e.orderedPair||'').trim()!==''&&String(e.location||'').trim()!=='';
+ if(e.type==='num'&&e.entryMode==='value')return Array.isArray(e.values)&&e.values.length>0&&e.values.every(v=>String(v||'').trim()!=='');
  return String(e.answer||'').trim()!=='';
 }
 function updateProgress(){
@@ -285,7 +294,7 @@ function markUnanswered(){
 }
 function clearAnswers(){
  if(!confirm('Clear all entered answers in this Answer Key?'))return;
- state.entries=state.entries.map(e=>e.type==='coord'?{...e,orderedPair:'',location:''}:{...e,answer:''});
+ state.entries=state.entries.map(e=>e.type==='coord'?{...e,orderedPair:'',location:''}:e.type==='num'&&e.entryMode==='value'?{...e,values:(e.values||[]).map(()=> '')}:{...e,answer:''});
  renderEntries();
 }
 function saveAnswerKey(){
