@@ -48,6 +48,24 @@ body.print-batch .printPage.one .paper{transform:scale(1)!important}
 body.print-batch .printPage.two .paper{transform:scale(.70710678)!important}
 body.print-batch .printPage.four .paper{transform:scale(.5)!important}
 
+/* A5 / 2-up optimized: use the full A5 height instead of simply shrinking the A4 preview */
+body.print-batch .printPage.two .paper.longBubbleSheet{padding:8mm 9mm 8mm!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .pHead{margin:0 7mm 2mm!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .pHead h1{font-size:19pt!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .pHead p{font-size:9pt!important;margin-top:.8mm!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .studentHeader{grid-template-columns:minmax(0,1fr) 50mm!important;gap:2mm!important;margin:0 1mm 2mm!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .studentLeft,
+body.print-batch .printPage.two .paper.longBubbleSheet .studentRight{gap:1.4mm!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .infoBox{padding:1.5mm!important;min-height:11mm!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .infoBox.studentInfoBox{height:14mm!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .infoBox.scoreBox{min-height:17mm!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .answerSections{min-height:205mm!important;gap:3mm!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .answerSec h4{padding:1.4mm 2mm!important;font-size:8.5pt!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .answerSec .body{padding:1mm 2mm!important;display:grid!important;grid-auto-rows:minmax(0,1fr)!important;justify-content:stretch!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .mcqRow{grid-template-columns:8mm repeat(10,7.5mm)!important;gap:1.1mm!important;min-height:0!important;height:auto!important;font-size:8.5pt!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .bubble{width:6.2mm!important;height:6.2mm!important;border-width:.55mm!important;font-size:7pt!important}
+body.print-batch .printPage.two .paper.longBubbleSheet .footer{font-size:6pt!important;margin-top:1mm!important}
+
 /* A6 / 4-up optimized: use more of each quarter-page so bubbles do not become too tiny */
 body.print-batch .printPage.four .paper{padding:8mm 8mm 8mm!important}
 body.print-batch .printPage.four .paper .corner{width:8mm!important;height:8mm!important}
@@ -460,7 +478,8 @@ function buildPaperHTML(learner){
   }
  });
  const sections=sectionParts.join('');
- return `<div class="paper">
+ const longBubbleSheet=state.questions.length>=40 && state.questions.every(q=>q.type==='mcq'||q.type==='tf');
+ return `<div class="paper${longBubbleSheet?' longBubbleSheet':''}">
  <span class="corner c1"></span><span class="corner c2"></span><span class="corner c3"></span><span class="corner c4"></span>
  <div class="pHead"><h1>SMART SCANNER</h1><p>${esc(state.name||'ANSWER SHEET')} • ${state.questions.length} ITEMS</p></div>
  ${info}
