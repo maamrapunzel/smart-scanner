@@ -16,15 +16,15 @@ button,input,select{font:inherit}.topbar{height:62px;background:var(--dark);colo
 label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}.field,select{width:100%;border:1px solid #d9d0d5;border-radius:10px;padding:10px 11px;background:#fff}.help{font-size:12px;color:var(--muted);line-height:1.45;margin-top:6px}
 .status{border:1px solid var(--line);background:#fcfafb;border-radius:11px;padding:11px 12px;font-size:12px;line-height:1.45}.status.ok{border-color:#a9dcc9;background:#f1fff9;color:#176448}.status.warn{border-color:#efd8a7;background:#fff9e8;color:#795815}.status.bad{border-color:#efc1c1;background:#fff4f4;color:#8b3131}
 .tableWrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{width:100%;border-collapse:collapse;min-width:1050px}th,td{padding:9px 10px;border-bottom:1px solid #eee8eb;text-align:left;font-size:12px;vertical-align:top}th{background:#f7f2f5;font-size:11px;text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0;z-index:1}td.num,th.num{text-align:center}.key{font-family:ui-monospace,Consolas,monospace;font-size:11px}.badge{display:inline-block;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:800}.good{background:#e9f8f1;color:#176448}.mid{background:#fff4d9;color:#795815}.low{background:#ffeaea;color:#8b3131}.muted{color:var(--muted)}.empty{padding:22px;text-align:center;color:var(--muted)}
-.actions{display:flex;gap:8px;flex-wrap:wrap}.sectionSummary{display:flex;gap:12px;flex-wrap:wrap}.sectionSummary span{font-size:12px;color:var(--muted)}
-@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}.grid3,.hero{grid-template-columns:1fr}.hero .actions{justify-content:flex-start}}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.sectionSummary{display:flex;gap:12px;flex-wrap:wrap}.sectionSummary span{font-size:12px;color:var(--muted)}.splitGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.miniTable{min-width:0!important}.miniTable th,.miniTable td{text-align:center}.miniTable th:first-child,.miniTable td:first-child{text-align:left}.sexMale{background:#eef6ff}.sexFemale{background:#fff0f6}.scorePass{color:#176448;font-weight:800}.scoreFail{color:#8b3131;font-weight:800}
+@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}.grid3,.hero,.splitGrid{grid-template-columns:1fr}.hero .actions{justify-content:flex-start}}
 @media print{
  body{background:#fff}.topbar,.hero .actions,.controls,.noPrint{display:none!important}.wrap{max-width:none;margin:0;padding:0}.card{box-shadow:none;border:0;border-radius:0}.cardHead{background:#fff;padding-left:0}.cardBody{padding:8px 0}.tableWrap{overflow:visible;border:0}table{min-width:0}th{position:static}.metrics{grid-template-columns:repeat(7,1fr)}.metric{padding:6px}.metric b{font-size:16px}
 }
 </style>
 </head>
 <body>
-<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Item Analysis</small></div><div class="spacer"></div><span class="pill">ITEM ANALYSIS V1</span></header>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Item Analysis</small></div><div class="spacer"></div><span class="pill">ITEM ANALYSIS V2 • SEX + SCORE DISTRIBUTION</span></header>
 
 <main class="wrap">
  <div class="hero">
@@ -60,8 +60,35 @@ label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}.field,sele
   </div>
  </section>
 
+ <div class="splitGrid">
+  <section class="card">
+   <div class="cardHead"><h2>3. Passed / Failed by Sex</h2></div>
+   <div class="cardBody">
+    <div class="tableWrap">
+     <table class="miniTable">
+      <thead><tr><th>Sex</th><th>Examinees</th><th>Passed</th><th>Failed</th><th>Passing Rate</th><th>Highest</th><th>Lowest</th><th>Mean</th></tr></thead>
+      <tbody id="sexRows"></tbody>
+     </table>
+    </div>
+    <div id="sexNote" class="help"></div>
+   </div>
+  </section>
+
+  <section class="card">
+   <div class="cardHead"><h2>4. Score Distribution</h2></div>
+   <div class="cardBody">
+    <div class="tableWrap">
+     <table class="miniTable">
+      <thead><tr><th>Score</th><th>Male</th><th>Female</th><th>No Sex</th><th>Total</th><th>% of Class</th><th>Status</th></tr></thead>
+      <tbody id="scoreRows"></tbody>
+     </table>
+    </div>
+   </div>
+  </section>
+ </div>
+
  <section class="card">
-  <div class="cardHead"><h2>3. Per-Item Analysis</h2><div class="spacer"></div><div id="itemSummary" class="sectionSummary"></div></div>
+  <div class="cardHead"><h2>5. Per-Item Analysis</h2><div class="spacer"></div><div id="itemSummary" class="sectionSummary"></div></div>
   <div class="cardBody">
    <div class="tableWrap">
     <table>
@@ -74,13 +101,27 @@ label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}.field,sele
 </main>
 
 <script>
-const KEY_REG='smartScannerAnswerKeys',CURRENT_KEY='smartScannerCurrentAnswerKey',SCAN_REG='smartScannerScans';
-let currentAnalysis=[];
+const KEY_REG='smartScannerAnswerKeys',CURRENT_KEY='smartScannerCurrentAnswerKey',SCAN_REG='smartScannerScans',SHEET_DRAFT='smartScannerAnswerSheetDraft';
+let currentAnalysis=[],currentSexSummary=[],currentScoreDistribution=[];
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function parse(s,f){try{return JSON.parse(s)}catch(e){return f}}
 function keys(){const a=parse(localStorage.getItem(KEY_REG),[]);return Array.isArray(a)?a:[]}
 function scans(){const a=parse(localStorage.getItem(SCAN_REG),[]);return Array.isArray(a)?a:[]}
+function normalizeSex(v){
+ const s=String(v??'').trim().toLowerCase();
+ if(s==='m'||s==='male')return 'Male';
+ if(s==='f'||s==='female')return 'Female';
+ return '';
+}
+function scanSex(scan){
+ let sx=normalizeSex(scan?.learner?.sex||scan?.learner?.gender);
+ if(sx)return sx;
+ const sheet=parse(localStorage.getItem(SHEET_DRAFT),null),learners=sheet?.learners||[];
+ const id=String(scan?.learner?.id||'').trim(),name=norm(scan?.learner?.name||'');
+ const match=learners.find(l=>(id&&String(l.id||'').trim()===id)||(name&&norm(l.name||'')===name));
+ return normalizeSex(match?.sex||match?.gender);
+}
 function norm(s){return String(s??'').trim().toLowerCase().replace(/[−–—]/g,'-').replace(/\s+/g,' ')}
 function compact(s){return norm(s).replace(/\s+/g,'')}
 function accepts(student,key,kind='text'){const opts=String(key??'').split('|').map(x=>kind==='coord'?compact(x):norm(x)).filter(Boolean),s=kind==='coord'?compact(student):norm(student);return !!s&&opts.includes(s)}
@@ -137,11 +178,37 @@ function renderAll(){
  const mean=scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:0,mps=totalPts?mean/totalPts*100:0;
  const high=scores.length?Math.max(...scores):0,low=scores.length?Math.min(...scores):0;
  const passed=ss.filter(s=>Number(s.totalPoints||totalPts)>0&&(Number(s.score||0)/Number(s.totalPoints||totalPts)*100)>=pass).length;
- mScanned.textContent=ss.length;mMean.textContent=fmt(mean,2)+' / '+fmt(totalPts,2);mMps.textContent=fmt(mps,1)+'%';mHigh.textContent=fmt(high,2);mLow.textContent=fmt(low,2);mPassed.textContent=passed;mRate.textContent=ss.length?fmt(passed/ss.length*100,1)+'%':'0%';
- summaryStatus.className='status '+(ss.length?'ok':'warn');summaryStatus.textContent=ss.length?(key.name+' • '+ss.length+' saved scan result'+(ss.length===1?'':'s')+' included.'):'No saved scan results yet for '+key.name+'. The table below will populate after scan results are saved.';
+ const highCount=scores.length?scores.filter(x=>x===high).length:0,lowCount=scores.length?scores.filter(x=>x===low).length:0;
+ mScanned.textContent=ss.length;mMean.textContent=fmt(mean,2)+' / '+fmt(totalPts,2);mMps.textContent=fmt(mps,1)+'%';mHigh.textContent=fmt(high,2)+(ss.length?' • '+highCount:'');mLow.textContent=fmt(low,2)+(ss.length?' • '+lowCount:'');mPassed.textContent=passed;mRate.textContent=ss.length?fmt(passed/ss.length*100,1)+'%':'0%';
+ summaryStatus.className='status '+(ss.length?'ok':'warn');summaryStatus.textContent=ss.length?(key.name+' • '+ss.length+' saved scan result'+(ss.length===1?'':'s')+' included. Highest/Lowest cards also show how many learners obtained those scores.'):'No saved scan results yet for '+key.name+'. The table below will populate after scan results are saved.';
+ buildSexSummary(ss,totalPts,pass);
+ buildScoreDistribution(ss,totalPts,pass);
  buildItems(key,ss);
 }
-function clearView(){['mScanned','mMean','mMps','mHigh','mLow','mPassed','mRate'].forEach(id=>document.getElementById(id).textContent=id==='mMps'||id==='mRate'?'0%':'0');analysisRows.innerHTML='<tr><td colspan="10" class="empty">No data yet.</td></tr>';itemSummary.innerHTML='';currentAnalysis=[]}
+function clearView(){['mScanned','mMean','mMps','mHigh','mLow','mPassed','mRate'].forEach(id=>document.getElementById(id).textContent=id==='mMps'||id==='mRate'?'0%':'0');analysisRows.innerHTML='<tr><td colspan="10" class="empty">No data yet.</td></tr>';sexRows.innerHTML='<tr><td colspan="8" class="empty">No data yet.</td></tr>';scoreRows.innerHTML='<tr><td colspan="7" class="empty">No data yet.</td></tr>';sexNote.textContent='';itemSummary.innerHTML='';currentAnalysis=[];currentSexSummary=[];currentScoreDistribution=[]}
+function buildSexSummary(ss,totalPts,pass){
+ const groups=['Male','Female','No Sex'].map(label=>{
+   const arr=ss.filter(s=>(scanSex(s)||'No Sex')===label),scores=arr.map(s=>Number(s.score||0));
+   const passed=arr.filter(s=>Number(s.totalPoints||totalPts)>0&&(Number(s.score||0)/Number(s.totalPoints||totalPts)*100)>=pass).length;
+   return{label,count:arr.length,passed,failed:arr.length-passed,rate:arr.length?passed/arr.length*100:0,high:scores.length?Math.max(...scores):0,low:scores.length?Math.min(...scores):0,mean:scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:0};
+ });
+ currentSexSummary=groups;
+ sexRows.innerHTML=groups.map(g=>'<tr class="'+(g.label==='Male'?'sexMale':g.label==='Female'?'sexFemale':'')+'"><td><b>'+g.label+'</b></td><td>'+g.count+'</td><td>'+g.passed+'</td><td>'+g.failed+'</td><td>'+fmt(g.rate,1)+'%</td><td>'+fmt(g.high,2)+'</td><td>'+fmt(g.low,2)+'</td><td>'+fmt(g.mean,2)+'</td></tr>').join('');
+ const noSex=groups.find(g=>g.label==='No Sex')?.count||0;
+ sexNote.textContent=noSex?noSex+' saved result(s) have no Sex value yet. Add Sex to the learner list/template so these can be included under Male or Female.':'All saved results have Male/Female data.';
+}
+function buildScoreDistribution(ss,totalPts,pass){
+ const byScore=new Map();
+ ss.forEach(s=>{
+   const score=Number(s.score||0),key=String(score),sex=scanSex(s)||'No Sex';
+   if(!byScore.has(key))byScore.set(key,{score,male:0,female:0,noSex:0,total:0});
+   const x=byScore.get(key);x.total++;
+   if(sex==='Male')x.male++;else if(sex==='Female')x.female++;else x.noSex++;
+ });
+ const rows=[...byScore.values()].sort((a,b)=>b.score-a.score).map(x=>({...x,pct:ss.length?x.total/ss.length*100:0,status:totalPts&&x.score/totalPts*100>=pass?'Passed':'Failed'}));
+ currentScoreDistribution=rows;
+ scoreRows.innerHTML=rows.length?rows.map(x=>'<tr><td><b>'+fmt(x.score,2)+'</b></td><td>'+x.male+'</td><td>'+x.female+'</td><td>'+x.noSex+'</td><td><b>'+x.total+'</b></td><td>'+fmt(x.pct,1)+'%</td><td class="'+(x.status==='Passed'?'scorePass':'scoreFail')+'">'+x.status+'</td></tr>').join(''):'<tr><td colspan="7" class="empty">No saved scan results yet.</td></tr>';
+}
 function buildItems(key,ss){
  const rows=key.entries.map((e,i)=>{
    let blank=0,correct=0,wrong=0;const counts={};
@@ -164,8 +231,12 @@ function buildItems(key,ss){
 }
 function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"'}
 function exportCSV(){
- const key=selectedKey();if(!key||!currentAnalysis.length){alert('No item analysis to export yet.');return}
- const rows=[['Item','Type','Key','Response Counts','Blank','Correct','Wrong','% Correct','Interpretation','Suggested Action']];
+ const key=selectedKey();if(!key){alert('No item analysis to export yet.');return}
+ const rows=[['SMART Scanner Item Analysis'],['Assessment',key.name||key.sourceSheetName||''],[],['PASSED / FAILED BY SEX'],['Sex','Examinees','Passed','Failed','Passing Rate','Highest','Lowest','Mean']];
+ currentSexSummary.forEach(g=>rows.push([g.label,g.count,g.passed,g.failed,fmt(g.rate,1)+'%',fmt(g.high,2),fmt(g.low,2),fmt(g.mean,2)]));
+ rows.push([],['SCORE DISTRIBUTION'],['Score','Male','Female','No Sex','Total','% of Class','Status']);
+ currentScoreDistribution.forEach(x=>rows.push([fmt(x.score,2),x.male,x.female,x.noSex,x.total,fmt(x.pct,1)+'%',x.status]));
+ rows.push([],['PER-ITEM ANALYSIS'],['Item','Type','Key','Response Counts','Blank','Correct','Wrong','% Correct','Interpretation','Suggested Action']);
  currentAnalysis.forEach(r=>rows.push([r.item,r.type,r.key,Object.entries(r.counts).map(([k,v])=>k+': '+v).join('; '),r.blank,r.correct,r.wrong,fmt(r.pct,1),r.interp.label,r.interp.action]));
  const csv='\ufeff'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(key.name||'item-analysis').replace(/[^a-z0-9_-]+/gi,'_')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
