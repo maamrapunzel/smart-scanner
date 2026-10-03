@@ -15,6 +15,22 @@ self.addEventListener('activate', event => {
 });
 self.addEventListener('fetch', event => {
   if(event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Answer Sheet Builder changes frequently during development.
+  // Use network-first so GitHub updates appear immediately, with cache fallback offline.
+  if(url.pathname.endsWith('/answer-sheet-builder.html')){
+    event.respondWith(
+      fetch(event.request, {cache:'no-store'}).then(response => {
+        const copy = response.clone();
+        caches.open(CACHE).then(cache => cache.put(event.request, copy)).catch(()=>{});
+        return response;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cached =>
       cached || fetch(event.request).then(response => {
