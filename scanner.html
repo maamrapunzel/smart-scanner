@@ -18,14 +18,14 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}.actions .btn{min-width:145px}#cameraInput,#galleryInput{display:none}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.metric{border:1px solid var(--line);border-radius:11px;padding:10px;text-align:center;background:#fcfafb}.metric b{display:block;font-size:19px;margin-bottom:2px}.metric small{color:var(--muted)}
 .reviewList{display:flex;flex-direction:column;gap:9px}.reviewItem{border:1px solid #ded6db;border-radius:12px;overflow:hidden;background:#fff}.reviewItem.problem{border-color:#dda64c;background:#fffaf0}.reviewTop{display:grid;grid-template-columns:58px 170px minmax(0,1fr);gap:10px;align-items:center;padding:9px 11px}.reviewNo{font-size:16px;font-weight:900}.typeTag{display:inline-block;border-radius:999px;background:#f0eaee;padding:5px 8px;font-size:10px;font-weight:800}.choiceRow{display:flex;gap:6px;flex-wrap:wrap}.choice{min-width:38px;height:34px;border:2px solid #bbb2b7;background:#fff;border-radius:18px;font-weight:900;cursor:pointer}.choice.selected{background:var(--pink);border-color:var(--pink);color:#fff}.choice.uncertain{box-shadow:0 0 0 3px #f3c46a55}
-.handReview{display:grid;grid-template-columns:minmax(160px,260px) minmax(180px,1fr);gap:10px;align-items:center}.crop{width:100%;height:52px;object-fit:contain;border:1px solid #d7cfd3;border-radius:8px;background:#fff}.multiInputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:6px}.answerInput{width:100%;border:1px solid #d7cfd3;border-radius:8px;padding:8px}.correct{outline:2px solid #6cc69f}.wrong{outline:2px solid #e88e8e}.reviewNote{border-top:1px solid #eee8eb;background:#fcfafb;padding:6px 11px;font-size:10px;color:var(--muted)}
+.handReview{display:grid;grid-template-columns:minmax(160px,260px) minmax(180px,1fr);gap:10px;align-items:center}.crop{width:100%;height:88px;object-fit:contain;border:1px solid #d7cfd3;border-radius:8px;background:#fff}.multiInputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:6px}.answerInput{width:100%;border:1px solid #d7cfd3;border-radius:8px;padding:8px}.correct{outline:2px solid #6cc69f}.wrong{outline:2px solid #e88e8e}.reviewNote{border-top:1px solid #eee8eb;background:#fcfafb;padding:6px 11px;font-size:10px;color:var(--muted)}
 .hidden{display:none!important}canvas{display:none}iframe#layoutFrame{position:absolute;left:-10000px;top:0;width:1400px;height:1900px;visibility:hidden;pointer-events:none;border:0}
 .saveBar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.saveBar .spacer{flex:1}
 @media(max-width:760px){.hero,.grid2,.grid3{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.reviewTop{grid-template-columns:48px 1fr}.reviewTop>.answerArea{grid-column:1/-1}.handReview{grid-template-columns:1fr}.actions .btn{flex:1;min-width:130px}}
 </style>
 </head>
 <body>
-<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V4.6 • FULL PAGE WARP</span></header>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V4.7 • PAGE + READ TUNE</span></header>
 
 <main class="wrap">
  <div class="hero">
@@ -217,9 +217,9 @@ function measurePaperMap(paper,entries){
    return{
      kind:'hand',
      entryId:e.id,
-     rect:normRect(unionRect(answerEls),4),
+     rect:normRect(unionRect(answerEls),12),
      boxCount:answerEls.length,
-     boxRects:answerEls.map(function(x){return normRect(x.getBoundingClientRect(),2)})
+     boxRects:answerEls.map(function(x){return normRect(x.getBoundingClientRect(),5)})
    };
  });
  map.pageMarkers={
@@ -447,16 +447,24 @@ function markerGeometryScore(pts,w,h){
  if(!(pts.tl.x<pts.tr.x&&pts.bl.x<pts.br.x&&pts.tl.y<pts.bl.y&&pts.tr.y<pts.br.y))return -Infinity;
  const top=dist(pts.tl,pts.tr),bottom=dist(pts.bl,pts.br),left=dist(pts.tl,pts.bl),right=dist(pts.tr,pts.br);
  const widthAvg=(top+bottom)/2,heightAvg=(left+right)/2;
- if(widthAvg<w*.28||heightAvg<h*.36)return -Infinity;
+ if(widthAvg<w*.30||heightAvg<h*.40)return -Infinity;
  const ratio=heightAvg/Math.max(1,widthAvg);
- if(ratio<1.02||ratio>2.05)return -Infinity;
+ if(ratio<1.22||ratio>1.78)return -Infinity;
  const topSkew=Math.abs(top-bottom)/Math.max(top,bottom);
  const sideSkew=Math.abs(left-right)/Math.max(left,right);
- if(topSkew>.48||sideSkew>.48)return -Infinity;
- const ratioScore=Math.max(0,1-Math.abs(ratio-1.49)/.65);
- const areaScore=Math.min(1,(widthAvg*heightAvg)/(w*h*.58));
- const shapeScore=Math.max(0,1-topSkew)*.8+Math.max(0,1-sideSkew)*.8;
- return ratioScore*3+areaScore*2.4+shapeScore;
+ if(topSkew>.34||sideSkew>.34)return -Infinity;
+
+ const sides=[(pts.tl.w+pts.tl.h)/2,(pts.tr.w+pts.tr.h)/2,(pts.bl.w+pts.bl.h)/2,(pts.br.w+pts.br.h)/2];
+ const maxSide=Math.max.apply(null,sides),minSide=Math.min.apply(null,sides);
+ if(minSide<=0||maxSide/minSide>1.85)return -Infinity;
+ const meanSide=sides.reduce(function(a,b){return a+b},0)/4;
+ const sizeSpread=sides.reduce(function(a,b){return a+Math.abs(b-meanSide)},0)/(4*meanSide);
+
+ const ratioScore=Math.max(0,1-Math.abs(ratio-1.50)/.30);
+ const areaScore=Math.min(1,(widthAvg*heightAvg)/(w*h*.55));
+ const shapeScore=Math.max(0,1-topSkew)+Math.max(0,1-sideSkew);
+ const sizeScore=Math.max(0,1-sizeSpread*2.2);
+ return ratioScore*5+areaScore*2.8+shapeScore*1.4+sizeScore*4;
 }
 function findFourMarkers(img){
  const w=img.width,h=img.height;
@@ -481,7 +489,10 @@ function findFourMarkers(img){
      const pts={tl:tl,tr:tr,bl:bl,br:br};
      const geo=markerGeometryScore(pts,w,h);
      if(!isFinite(geo))continue;
-     const total=tl.score+tr.score+bl.score+br.score+geo;
+     const meanFill=(tl.fill+tr.fill+bl.fill+br.fill)/4;
+     const meanSide=(tl.w+tl.h+tr.w+tr.h+bl.w+bl.h+br.w+br.h)/8;
+     const sizeDev=(Math.abs((tl.w+tl.h)/2-meanSide)+Math.abs((tr.w+tr.h)/2-meanSide)+Math.abs((bl.w+bl.h)/2-meanSide)+Math.abs((br.w+br.h)/2-meanSide))/(4*Math.max(1,meanSide));
+     const total=tl.score+tr.score+bl.score+br.score+geo+meanFill*3+Math.max(0,1-sizeDev*2)*4;
      if(!best||total>best.total)best={tl:tl,tr:tr,bl:bl,br:br,total:total,threshold:threshold};
    }
    if(best&&best.total>30)break;
@@ -518,6 +529,18 @@ function warpPage(src,pts,W,H,pageMarkers){
 }
 function homography(from,to){const A=[],b=[];for(let i=0;i<4;i++){const u=from[i].x,v=from[i].y,x=to[i].x,y=to[i].y;A.push([u,v,1,0,0,0,-x*u,-x*v]);b.push(x);A.push([0,0,0,u,v,1,-y*u,-y*v]);b.push(y)}return solve(A,b)}
 function solve(A,b){const n=b.length,M=A.map((r,i)=>r.slice().concat(b[i]));for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;[M[c],M[p]]=[M[p],M[c]];if(Math.abs(M[c][c])<1e-10)throw new Error('Perspective correction failed.');const d=M[c][c];for(let j=c;j<=n;j++)M[c][j]/=d;for(let r=0;r<n;r++)if(r!==c){const q=M[r][c];for(let j=c;j<=n;j++)M[r][j]-=q*M[c][j]}}return M.map(r=>r[n])}
+function sampleDiskDark(img,nx,ny,r){
+ const cx=nx*(img.width-1),cy=ny*(img.height-1),d=img.data,w=img.width,h=img.height;
+ let sum=0,n=0,lim=Math.ceil(r),rrMax=r*r;
+ for(let dy=-lim;dy<=lim;dy++)for(let dx=-lim;dx<=lim;dx++){
+   if(dx*dx+dy*dy>rrMax)continue;
+   const x=Math.round(cx+dx),y=Math.round(cy+dy);
+   if(x<0||y<0||x>=w||y>=h)continue;
+   const p=(y*w+x)*4,g=d[p]*.299+d[p+1]*.587+d[p+2]*.114;
+   sum+=1-g/255;n++;
+ }
+ return n?sum/n:0;
+}
 function sampleAnnulusDark(img,nx,ny,r0,r1){
  const cx=nx*(img.width-1),cy=ny*(img.height-1),d=img.data,w=img.width,h=img.height;
  let sum=0,n=0;const a=r0*r0,b=r1*r1,lim=Math.ceil(r1);
@@ -531,11 +554,12 @@ function sampleAnnulusDark(img,nx,ny,r0,r1){
 }
 function bubbleFillScore(img,b){
  const R=Math.max(4,b.r*img.width);
- // Read the interior ring, not the printed choice letter at the center and not the circle outline.
- const ink=sampleAnnulusDark(img,b.x,b.y,R*.42,R*.78);
- // Local background compensation makes the reading less sensitive to shadows.
- const bg=sampleAnnulusDark(img,b.x,b.y,R*1.08,R*1.28);
- return Math.max(0,ink-bg*.70);
+ const core=sampleDiskDark(img,b.x,b.y,R*.58);
+ const ring=sampleAnnulusDark(img,b.x,b.y,R*.38,R*.76);
+ const bg=sampleAnnulusDark(img,b.x,b.y,R*1.05,R*1.32);
+ // Filled bubbles darken both the center and the inner ring. Printed option letters
+ // affect the center a little, so the ring still carries more weight.
+ return Math.max(0,core*.36+ring*.64-bg*.72);
 }
 
 function readDynamicSheet(img,map,entries){
@@ -547,9 +571,13 @@ function readDynamicSheet(img,map,entries){
    if(m.kind==='bubble'){
      const vals=m.bubbles.map(b=>bubbleFillScore(img,b));
      const ranked=vals.map((v,j)=>({v,j})).sort((a,b)=>b.v-a.v),top=ranked[0],second=ranked[1]||{v:0};
-     const minFill=Math.max(.050,baseline+.035);
-     const minGap=Math.max(.018,baseline*.35);
-     const filled=top.v>=minFill,separated=(top.v-second.v)>=minGap,answer=filled&&separated?m.labels[top.j]:'';
+     const localSorted=vals.slice().sort(function(a,b){return a-b});
+     const localBase=localSorted[Math.floor(localSorted.length/2)]||0;
+     const minFill=Math.max(.026,baseline+.015,localBase+.012);
+     const minGap=Math.max(.008,(top.v-localBase)*.16);
+     const filled=top.v>=minFill;
+     const separated=(top.v-second.v)>=minGap;
+     const answer=filled&&separated?m.labels[top.j]:'';
      const uncertain=!answer;if(uncertain)warnings++;else auto++;
      return{entryId:e.id,type:e.type,answer,uncertain,vals,labels:m.labels,baseline,minFill,minGap};
    }
