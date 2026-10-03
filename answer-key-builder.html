@@ -301,10 +301,10 @@ function clearAnswers(){
 }
 function saveAnswerKey(){
  saveSuccess.style.display='none';saveError.style.display='none';
- if(!state.sheet){saveError.textContent='No Answer Sheet is loaded.';saveError.style.display='block';return}
+ if(!state.sheet){saveError.textContent='No Answer Sheet is loaded.';saveError.style.display='block';return false}
  const name=keyName.value.trim()||((state.sheet.name||'Answer Sheet')+' — Key');
  const unanswered=state.entries.filter(e=>!isAnswered(e)).length;
- if(unanswered&&!confirm(unanswered+' answer entr'+(unanswered===1?'y is':'ies are')+' still blank. Save anyway?'))return;
+ if(unanswered&&!confirm(unanswered+' answer entr'+(unanswered===1?'y is':'ies are')+' still blank. Save anyway?'))return false;
 
  const now=new Date().toISOString();
  const key={
@@ -326,6 +326,10 @@ function saveAnswerKey(){
  state.saved=key;
  saveSuccess.textContent='Answer Key saved. '+state.entries.length+' answer entries • '+key.totalPoints+' total points.';
  saveSuccess.style.display='block';
+ return true;
+}
+function saveAndOpenSync(){
+ if(saveAnswerKey())window.location.href='./sync.html';
 }
 init();
 </script>
