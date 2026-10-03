@@ -25,7 +25,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 </style>
 </head>
 <body>
-<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V4 • LIVE SCAN</span></header>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V4.1 • FAST LIVE SCAN</span></header>
 
 <main class="wrap">
  <div class="hero">
@@ -254,20 +254,20 @@ function markersClose(a,b,img){
  if(!a||!b)return false;
  var keys=['tl','tr','bl','br'],scale=Math.max(img.width,img.height),sum=0;
  for(var i=0;i<keys.length;i++)sum+=dist(a[keys[i]],b[keys[i]]);
- return (sum/keys.length)<scale*.016;
+ return (sum/keys.length)<scale*.026;
 }
 async function analyzeLiveFrame(){
  if(!mediaStream||liveBusy||autoCaptureLocked)return;
  liveBusy=true;
  try{
-   var imageData=imageToImageData(liveVideo,850);
+   var imageData=imageToImageData(liveVideo,720);
    var pts=findFourMarkers(imageData);
    stableFrames=markersClose(pts,lastLivePts,imageData)?stableFrames+1:1;
    lastLivePts=pts;
    liveBadge.className='liveBadge '+(stableFrames>=2?'ok':'warn');
-   liveBadge.textContent=stableFrames>=3?'Stable — scanning…':'4 blocks found • Hold steady '+stableFrames+'/3';
+   liveBadge.textContent=stableFrames>=2?'Stable — scanning…':'4 blocks found • Hold steady 1/2';
    setScanStatus('Four corner blocks found. Hold steady for automatic scan.','ok');
-   if(stableFrames>=3){
+   if(stableFrames>=2){
      autoCaptureLocked=true;
      showImageDataPreview(imageData);
      stopCameraTracks();
@@ -280,7 +280,7 @@ async function analyzeLiveFrame(){
    setScanStatus('Move the phone until the full sheet and all 4 black blocks are visible.','warn');
  }
  liveBusy=false;
- if(mediaStream&&!autoCaptureLocked)scheduleLiveAnalysis(650);
+ if(mediaStream&&!autoCaptureLocked)scheduleLiveAnalysis(450);
 }
 function stopCameraTracks(){
  if(liveTimer){clearTimeout(liveTimer);liveTimer=null}
@@ -374,35 +374,45 @@ function findBestCornerMarker(img,x0,x1,y0,y1,scales){
  }
  return best;
 }
-function findMarkerOnWhite(img,x0,x1,y0,y1,win){
- const w=img.width,h=img.height,d=img.data;
- x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(w,Math.floor(x1));y1=Math.min(h,Math.floor(y1));
- const dark=new Uint8Array(w*h);
- for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-   const p=(y*w+x)*4,g=d[p]*.299+d[p+1]*.587+d[p+2]*.114;
-   dark[y*w+x]=g<145?1:0;
+function getDarkIntegral(img){
+ if(img._smartIntegral)return img._smartIntegral;
+ const w=img.width,h=img.height,d=img.data,iw=w+1,integ=new Uint32Array((w+1)*(h+1));
+ for(let y=1;y<=h;y++){
+   let row=0;
+   for(let x=1;x<=w;x++){
+     const p=((y-1)*w+(x-1))*4;
+     const g=d[p]*.299+d[p+1]*.587+d[p+2]*.114;
+     row+=g<150?1:0;
+     integ[y*iw+x]=integ[(y-1)*iw+x]+row;
+   }
  }
- const iw=w+1,integ=new Uint32Array((w+1)*(h+1));
- for(let y=1;y<=h;y++){let row=0;for(let x=1;x<=w;x++){row+=dark[(y-1)*w+(x-1)];integ[y*iw+x]=integ[(y-1)*iw+x]+row}}
+ const out={w:w,h:h,iw:iw,integ:integ};
+ try{Object.defineProperty(img,'_smartIntegral',{value:out,configurable:true})}catch(e){}
+ return out;
+}
+function findMarkerOnWhite(img,x0,x1,y0,y1,win){
+ const ii=getDarkIntegral(img),w=ii.w,h=ii.h,iw=ii.iw,integ=ii.integ;
+ x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(w,Math.floor(x1));y1=Math.min(h,Math.floor(y1));
  function sum(ax,ay,bx,by){
    ax=Math.max(0,Math.floor(ax));ay=Math.max(0,Math.floor(ay));bx=Math.min(w,Math.floor(bx));by=Math.min(h,Math.floor(by));
    if(bx<=ax||by<=ay)return{sum:0,area:1};
    return{sum:integ[by*iw+bx]-integ[ay*iw+bx]-integ[by*iw+ax]+integ[ay*iw+ax],area:(bx-ax)*(by-ay)};
  }
- const step=Math.max(2,Math.round(win/5)),outer=Math.round(win*2.25),ih=Math.floor(win/2),oh=Math.floor(outer/2);
+ const step=Math.max(3,Math.round(win/4)),outer=Math.round(win*2.2),ih=Math.floor(win/2),oh=Math.floor(outer/2);
  let best=null;
- for(let cy=y0+oh;cy<y1-oh;cy+=step)for(let cx=x0+oh;cx<x1-oh;cx+=step){
-   const inn=sum(cx-ih,cy-ih,cx-ih+win,cy-ih+win);
-   const out=sum(cx-oh,cy-oh,cx-oh+outer,cy-oh+outer);
-   const inner=inn.sum/inn.area;
-   if(inner<.62)continue;
-   const ring=Math.max(0,out.sum-inn.sum)/Math.max(1,out.area-inn.area);
-   // Registration blocks should be very dark inside and much lighter immediately around them.
-   const contrast=inner-ring;
-   const score=inner*1.15- ring*.95 + contrast*.55;
-   if(!best||score>best.score)best={x:cx,y:cy,score,win};
+ for(let cy=y0+oh;cy<y1-oh;cy+=step){
+   for(let cx=x0+oh;cx<x1-oh;cx+=step){
+     const inn=sum(cx-ih,cy-ih,cx-ih+win,cy-ih+win);
+     const out=sum(cx-oh,cy-oh,cx-oh+outer,cy-oh+outer);
+     const inner=inn.sum/inn.area;
+     if(inner<.52)continue;
+     const ring=Math.max(0,out.sum-inn.sum)/Math.max(1,out.area-inn.area);
+     const contrast=inner-ring;
+     const score=inner*1.10-ring*.78+contrast*.50;
+     if(!best||score>best.score)best={x:cx,y:cy,score:score,win:win};
+   }
  }
- return best&&best.score>.55?best:null;
+ return best&&best.score>.42?best:null;
 }
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
 function warpPage(src,pts,W,H){
