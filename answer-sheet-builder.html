@@ -62,7 +62,7 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}.field,sele
 <thead><tr><th>Usage</th><th class="center">Enabled?</th><th>Displayed Label on Answer Sheet</th><th>Width</th></tr></thead>
 <tbody id="headerRows"></tbody>
 </table>
-<div class="help">You can rename labels. Example: “Class” can display as “Section”. Score may be included as a blank box for teacher use.</div>
+<div class="help">Choose the assessment label as Quiz, Summative, or Exam. Grade & Section appears as one field. Score may be included as a blank box for teacher use.</div>
 </div>
 
 <div id="step3" class="stepPane hidden">
@@ -88,7 +88,7 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}.field,sele
 <h3>Personalized Learner List</h3>
 <label>Paste Learners</label>
 <textarea id="learnerList" rows="7" placeholder="Juan Dela Cruz | Grade 8 - Acacia&#10;Maria Santos | Grade 8 - Acacia"></textarea>
-<div class="help">Format: Name | Section. Student ID is not required.</div>
+<div class="help">Format: Name | Grade & Section. Student ID is not required.</div>
 </div>
 </div>
 
@@ -141,8 +141,8 @@ const state={
  name:'',
  headers:[
   {usage:'Name',enabled:true,label:'Name',width:'Large'},
-  {usage:'Quiz',enabled:false,label:'Quiz',width:'Medium'},
-  {usage:'Class',enabled:true,label:'Section',width:'Medium'},
+  {usage:'Assessment',enabled:true,label:'Quiz',width:'Medium'},
+  {usage:'Grade & Section',enabled:true,label:'Grade & Section',width:'Medium'},
   {usage:'Other 1',enabled:false,label:'Score',width:'Medium'},
   {usage:'Other 2',enabled:false,label:'',width:'Medium'},
   {usage:'Other 3',enabled:false,label:'',width:'Medium'}
@@ -170,7 +170,7 @@ function collect(){
  saveDraft();
 }
 function saveDraft(){try{localStorage.setItem('smartScannerAnswerSheetDraft',JSON.stringify(state))}catch(e){}}
-function loadDraft(){try{const x=JSON.parse(localStorage.getItem('smartScannerAnswerSheetDraft'));if(x&&x.headers&&x.questions)Object.assign(state,x)}catch(e){}}
+function loadDraft(){try{const x=JSON.parse(localStorage.getItem('smartScannerAnswerSheetDraft'));if(x&&x.headers&&x.questions){x.headers=x.headers.map(h=>h.usage==='Quiz'?{...h,usage:'Assessment',label:['Quiz','Summative','Exam'].includes(h.label)?h.label:'Quiz'}:h.usage==='Class'?{...h,usage:'Grade & Section',label:'Grade & Section'}:h);Object.assign(state,x)}}catch(e){}}
 function init(){
  loadDraft(); sheetName.value=state.name||''; renderHeaderRows();
  document.querySelectorAll('input[name=mode]').forEach(r=>r.checked=r.value===state.mode);
@@ -179,7 +179,7 @@ function init(){
  syncStudentOptions();renderQuestions();showStep(1);
 }
 function renderHeaderRows(){
- headerRows.innerHTML=state.headers.map((h,i)=>`<tr><td><b>${esc(h.usage)}</b></td><td class="center"><input class="check h-enabled" type="checkbox" ${h.enabled?'checked':''}></td><td><input class="h-label" type="text" value="${esc(h.label)}"></td><td><select class="h-width"><option ${h.width==='Small'?'selected':''}>Small</option><option ${h.width==='Medium'?'selected':''}>Medium</option><option ${h.width==='Large'?'selected':''}>Large</option></select></td></tr>`).join('');
+ headerRows.innerHTML=state.headers.map((h,i)=>{const labelControl=h.usage==='Assessment'?`<select class="h-label"><option ${h.label==='Quiz'?'selected':''}>Quiz</option><option ${h.label==='Summative'?'selected':''}>Summative</option><option ${h.label==='Exam'?'selected':''}>Exam</option></select>`:`<input class="h-label" type="text" value="${esc(h.label)}">`;return `<tr><td><b>${esc(h.usage)}</b></td><td class="center"><input class="check h-enabled" type="checkbox" ${h.enabled?'checked':''}></td><td>${labelControl}</td><td><select class="h-width"><option ${h.width==='Small'?'selected':''}>Small</option><option ${h.width==='Medium'?'selected':''}>Medium</option><option ${h.width==='Large'?'selected':''}>Large</option></select></td></tr>`}).join('');
 }
 function syncStudentOptions(){
  idOptions.classList.toggle('hidden',!includeId.checked);
@@ -250,7 +250,7 @@ function renderPreview(){
  let info=state.headers.filter(h=>h.enabled).map(h=>{
   let value='';
   if(learner&&h.usage==='Name')value=learner.name;
-  if(learner&&h.usage==='Class')value=learner.section;
+  if(learner&&h.usage==='Grade & Section')value=learner.section;
   return `<div class="infoBox" style="grid-column:span ${widthSpan(h.width)}"><b>${esc(h.label||h.usage)}</b>${esc(value)}</div>`;
  }).join('');
  if(state.includeId)info+=`<div class="infoBox" style="grid-column:span 4"><b>${esc(state.idLabel)}</b></div>`;
