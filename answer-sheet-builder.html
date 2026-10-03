@@ -293,18 +293,28 @@ function renderPreview(){
   if(!cur||cur.key!==key){cur={key,type:q.type,q,items:[]};groups.push(cur)}
   cur.items.push(i+1);
  });
- const sections=groups.map(g=>{
+ const sectionParts=[];
+ groups.forEach(g=>{
   if(g.type==='mcq'||g.type==='tf'){
    let labels=g.q.labels.split('');
-   let rows=g.items.map(n=>`<div class="mcqRow"><b>${n}.</b>${labels.map(x=>`<span class="bubble">${esc(x)}</span>`).join('')}</div>`).join('');
-   return `<section class="answerSec"><h4>${g.type==='tf'?'TRUE / FALSE':'MULTIPLE CHOICE'} <span class="tiny">• ${esc(g.q.labels)}</span></h4><div class="body">${rows}</div></section>`;
+   let chunks=[g.items];
+   if(g.items.length>25){
+     const splitAt=Math.ceil(g.items.length/2);
+     chunks=[g.items.slice(0,splitAt),g.items.slice(splitAt)];
+   }
+   chunks.forEach((items,chunkIndex)=>{
+     let rows=items.map(n=>`<div class="mcqRow"><b>${n}.</b>${labels.map(x=>`<span class="bubble">${esc(x)}</span>`).join('')}</div>`).join('');
+     let range=items.length?`<span class="tiny">• Items ${items[0]}–${items[items.length-1]}</span>`:'';
+     sectionParts.push(`<section class="answerSec"><h4>${g.type==='tf'?'TRUE / FALSE':'MULTIPLE CHOICE'} ${range}</h4><div class="body">${rows}</div></section>`);
+   });
   } else {
    let rows=g.items.map(n=>`<div class="boxRow"><b>${n}.</b><div class="boxes">${Array.from({length:g.q.boxes},()=>'<span class="box"></span>').join('')}</div></div>`).join('');
    let note=g.type==='word'?'Write one character per box.':'Write one numerical character per box.';
    if(g.type==='num'){let x=[];if(g.q.neg)x.push('−');if(g.q.dec)x.push('decimal');if(g.q.frac)x.push('fraction');if(g.q.sci)x.push('e');if(x.length)note+=' Allowed: '+x.join(', ')+'.'}
-   return `<section class="answerSec"><h4>${g.type==='word'?'WORD / TEXT':'NUMERICAL'} <span class="tiny">• ${esc(note)}</span></h4><div class="body">${rows}</div></section>`;
+   sectionParts.push(`<section class="answerSec"><h4>${g.type==='word'?'WORD / TEXT':'NUMERICAL'} <span class="tiny">• ${esc(note)}</span></h4><div class="body">${rows}</div></section>`);
   }
- }).join('');
+ });
+ const sections=sectionParts.join('');
  paperHost.innerHTML=`<div class="paper">
  <span class="corner c1"></span><span class="corner c2"></span><span class="corner c3"></span><span class="corner c4"></span>
  <div class="pHead"><h1>SMART SCANNER</h1><p>${esc(state.name||'ANSWER SHEET')} • ${state.questions.length} ITEMS</p></div>
