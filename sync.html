@@ -35,8 +35,8 @@ details{border:1px solid var(--line);border-radius:12px;background:#fff;margin-t
   <a class="btn light" href="./answer-key-builder.html">← Answer Key</a>
  </div>
 
- <div class="grid2">
-  <section class="card">
+ <div class="grid2" id="deviceGrid">
+  <section class="card" id="laptopCard">
    <div class="cardHead"><h2>Laptop</h2></div>
    <div class="cardBody">
     <div class="deviceLabel">Send the latest assessment</div>
@@ -70,7 +70,7 @@ details{border:1px solid var(--line);border-radius:12px;background:#fff;margin-t
    </div>
   </section>
 
-  <section class="card">
+  <section class="card" id="phoneCard">
    <div class="cardHead"><h2>Phone</h2></div>
    <div class="cardBody">
     <div class="deviceLabel">Get the latest assessment</div>
@@ -168,16 +168,26 @@ function ensurePairId(){
  return id;
 }
 
+function sheetSignature(sheet){
+ return JSON.stringify({name:sheet?.name||'',questions:sheet?.questions||[]});
+}
 function currentPackage(){
  const sheet=parse(localStorage.getItem(SHEET_KEY),null);
- let key=parse(localStorage.getItem(CURRENT_KEY),null);
- if(!key){
-   const keys=parse(localStorage.getItem(KEY_REG),[]);
-   if(Array.isArray(keys)&&keys.length)key=keys[keys.length-1];
- }
  if(!sheet||!Array.isArray(sheet.questions))throw new Error('No Answer Sheet found in this browser.');
- if(!key||!Array.isArray(key.entries))throw new Error('No saved Answer Key found. Save the Answer Key first.');
- return{packageVersion:2,createdAt:new Date().toISOString(),sheet,key};
+
+ const sig=sheetSignature(sheet);
+ let key=parse(localStorage.getItem(CURRENT_KEY),null);
+ let keys=parse(localStorage.getItem(KEY_REG),[]);
+ if(!Array.isArray(keys))keys=[];
+
+ if(!key||!Array.isArray(key.entries)||key.sourceSignature!==sig){
+   key=null;
+   for(let i=keys.length-1;i>=0;i--){
+     if(keys[i]?.sourceSignature===sig&&Array.isArray(keys[i]?.entries)){key=keys[i];break}
+   }
+ }
+ if(!key)throw new Error('No saved Answer Key for this Answer Sheet. Open Answer Key, save it, then return to SMART Sync.');
+ return{packageVersion:3,createdAt:new Date().toISOString(),sheet,key};
 }
 
 function refreshSummary(){
@@ -321,8 +331,26 @@ function acceptPairFromLink(){
  return false;
 }
 
+function applyDeviceView(){
+ const ua=navigator.userAgent||'';
+ const isPhone=/Android|iPhone|iPod|Mobile/i.test(ua);
+ if(isPhone){
+   laptopCard.style.display='none';
+   phoneCard.style.display='';
+   deviceGrid.style.gridTemplateColumns='1fr';
+   document.querySelector('.hero h1').textContent='Sync from Laptop';
+   document.querySelector('.hero p').textContent='Get the latest saved Answer Sheet and Answer Key from the laptop.';
+ }else{
+   laptopCard.style.display='';
+   phoneCard.style.display='none';
+   deviceGrid.style.gridTemplateColumns='1fr';
+   document.querySelector('.hero h1').textContent='Send to Phone';
+   document.querySelector('.hero p').textContent='Send the latest saved Answer Sheet and Answer Key to the paired phone.';
+ }
+}
 function init(){
  endpoint.value=localStorage.getItem(ENDPOINT_KEY)||'';
+ applyDeviceView();
  refreshSummary();
  acceptPairFromLink();
  updatePairUI();
