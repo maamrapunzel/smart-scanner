@@ -25,7 +25,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 </style>
 </head>
 <body>
-<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V2 • BLOCK ALIGN</span></header>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V3 • CORNER LOCK</span></header>
 
 <main class="wrap">
  <div class="hero">
@@ -61,6 +61,10 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
     <button class="btn dark" onclick="openGallery()">🖼 Choose Photo</button>
    </div>
    <div id="scanStatus" class="status" style="margin-top:12px">Ready when your Answer Key is loaded.</div>
+   <div id="alignedPreviewBox" class="hidden" style="margin-top:12px">
+    <div class="help" style="margin-bottom:6px"><b>Aligned Page Preview</b> — the four black corner blocks should be at the four corners and the answer rows should look straight before checking the score.</div>
+    <img id="alignedPreview" style="display:block;width:min(100%,430px);margin:auto;border:2px solid #d7cfd3;border-radius:10px;background:#fff">
+   </div>
   </div>
  </section>
 
@@ -93,7 +97,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 
 <canvas id="capture"></canvas>
 <canvas id="warp"></canvas>
-<iframe id="layoutFrame" src="./answer-sheet-builder.html?scanner-layout=2"></iframe>
+<iframe id="layoutFrame" src="./answer-sheet-builder.html?scanner-layout=3"></iframe>
 
 <script>
 const KEY_REG='smartScannerAnswerKeys';
@@ -208,6 +212,7 @@ async function photoSelected(ev){
    const pts=findFourMarkers(imageData);
    setScanStatus('Straightening the answer sheet…','warn');
    warpedImage=warpPage(imageData,pts,FRAME_W,FRAME_H);
+   showAlignedPreview();
    setScanStatus('Reading aligned answer areas and bubble marks…','warn');
    currentScan=readDynamicSheet(warpedImage,currentMap,currentKey.entries);
    renderReview();
@@ -215,6 +220,13 @@ async function photoSelected(ev){
  }catch(e){console.error(e);setScanStatus('Scan failed: '+e.message,'bad')}
 }
 function setScanStatus(t,kind=''){scanStatus.className='status '+kind;scanStatus.textContent=t}
+function showAlignedPreview(){
+ if(!warpedImage)return;
+ const cv=document.createElement('canvas');cv.width=FRAME_W;cv.height=FRAME_H;
+ cv.getContext('2d').putImageData(warpedImage,0,0);
+ alignedPreview.src=cv.toDataURL('image/jpeg',.9);
+ alignedPreviewBox.classList.remove('hidden');
+}
 function showPreview(file){const url=URL.createObjectURL(file);photoPreview.onload=()=>URL.revokeObjectURL(url);photoPreview.src=url;photoPreview.style.display='block';photoPlaceholder.style.display='none'}
 async function decodePhoto(file){
  if(window.createImageBitmap){try{return await createImageBitmap(file,{imageOrientation:'from-image'})}catch(e){try{return await createImageBitmap(file)}catch(e2){}}}
@@ -228,36 +240,65 @@ function imageToImageData(source){
  return ctx.getImageData(0,0,c.width,c.height);
 }
 function findFourMarkers(img){
- const w=img.width,h=img.height,baseWin=Math.max(14,Math.round(w*.028)),xPad=Math.round(w*.015),yPad=Math.round(h*.012);
- function pass(win,wide=false){
-   const topY=wide?Math.floor(h*.43):Math.floor(h*.36);
-   const botY=wide?Math.floor(h*.57):Math.floor(h*.64);
-   const leftX=wide?Math.floor(w*.49):Math.floor(w*.46);
-   const rightX=wide?Math.floor(w*.51):Math.floor(w*.54);
-   return{
-     tl:findMarkerOnWhite(img,xPad,leftX,yPad,topY,win),
-     tr:findMarkerOnWhite(img,rightX,w-xPad,yPad,topY,win),
-     bl:findMarkerOnWhite(img,xPad,leftX,botY,h-yPad,win),
-     br:findMarkerOnWhite(img,rightX,w-xPad,botY,h-yPad,win)
-   };
+ const w=img.width,h=img.height;
+ const regions={
+   tl:[Math.round(w*.01),Math.round(w*.34),Math.round(h*.01),Math.round(h*.28)],
+   tr:[Math.round(w*.66),Math.round(w*.99),Math.round(h*.01),Math.round(h*.28)],
+   bl:[Math.round(w*.01),Math.round(w*.34),Math.round(h*.72),Math.round(h*.99)],
+   br:[Math.round(w*.66),Math.round(w*.99),Math.round(h*.72),Math.round(h*.99)]
+ };
+ const scales=[.014,.018,.022,.027,.033,.040].map(v=>Math.max(10,Math.round(w*v)));
+ const pick=reg=>findBestCornerMarker(img,...reg,scales);
+ const pts={tl:pick(regions.tl),tr:pick(regions.tr),bl:pick(regions.bl),br:pick(regions.br)};
+ if(!pts.tl||!pts.tr||!pts.bl||!pts.br){
+   throw new Error('Could not lock onto all 4 black corner blocks. Keep the entire sheet visible; do not crop any black block.');
  }
- let pts=pass(baseWin,false);
- if(!pts.tl||!pts.tr||!pts.bl||!pts.br)pts=pass(Math.round(baseWin*1.35),true);
- if(!pts.tl||!pts.tr||!pts.bl||!pts.br)throw new Error('Could not lock onto all 4 black registration blocks. Make sure the entire sheet is visible and the black corner blocks are not cut off.');
- const {tl,tr,bl,br}=pts;
- const top=dist(tl,tr),bottom=dist(bl,br),left=dist(tl,bl),right=dist(tr,br),ratio=((left+right)/2)/((top+bottom)/2);
- if(Math.min(top,bottom,left,right)<w*.25)throw new Error('The sheet is too small in the photo. Move a little closer while keeping all 4 black blocks visible.');
- if(ratio<1.05||ratio>1.95)throw new Error('The 4 detected blocks do not form a valid answer-sheet rectangle. Retake the photo with the full sheet visible.');
- return{tl,tr,bl,br};
+ const top=dist(pts.tl,pts.tr),bottom=dist(pts.bl,pts.br),left=dist(pts.tl,pts.bl),right=dist(pts.tr,pts.br);
+ const widthAvg=(top+bottom)/2,heightAvg=(left+right)/2,ratio=heightAvg/widthAvg;
+ const topSkew=Math.abs(top-bottom)/Math.max(top,bottom),sideSkew=Math.abs(left-right)/Math.max(left,right);
+ if(widthAvg<w*.42||heightAvg<h*.48)throw new Error('The detected corner blocks are too close together. Keep the full sheet larger in the photo.');
+ if(ratio<1.15||ratio>1.80||topSkew>.32||sideSkew>.32){
+   throw new Error('The detected black blocks do not match the answer-sheet corners. Retake the photo with all four corners visible and less extreme tilt.');
+ }
+ return pts;
+}
+function findBestCornerMarker(img,x0,x1,y0,y1,scales){
+ let best=null;
+ for(const win of scales){
+   const hit=findMarkerOnWhite(img,x0,x1,y0,y1,win);
+   if(hit&&(!best||hit.score>best.score))best=hit;
+ }
+ return best;
 }
 function findMarkerOnWhite(img,x0,x1,y0,y1,win){
- const w=img.width,h=img.height,d=img.data;x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(w,Math.floor(x1));y1=Math.min(h,Math.floor(y1));
- const dark=new Uint8Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const p=(y*w+x)*4,g=d[p]*.299+d[p+1]*.587+d[p+2]*.114;dark[y*w+x]=g<150?1:0}
- const iw=w+1,integ=new Uint32Array((w+1)*(h+1));for(let y=1;y<=h;y++){let row=0;for(let x=1;x<=w;x++){row+=dark[(y-1)*w+(x-1)];integ[y*iw+x]=integ[(y-1)*iw+x]+row}}
- function sum(ax,ay,bx,by){ax=Math.max(0,Math.floor(ax));ay=Math.max(0,Math.floor(ay));bx=Math.min(w,Math.floor(bx));by=Math.min(h,Math.floor(by));if(bx<=ax||by<=ay)return{sum:0,area:1};return{sum:integ[by*iw+bx]-integ[ay*iw+bx]-integ[by*iw+ax]+integ[ay*iw+ax],area:(bx-ax)*(by-ay)}}
- const step=Math.max(2,Math.round(win/5)),outer=Math.max(win+6,Math.round(win*2.4)),ih=Math.floor(win/2),oh=Math.floor(outer/2);let best=null;
- for(let cy=y0+oh;cy<y1-oh;cy+=step)for(let cx=x0+oh;cx<x1-oh;cx+=step){const inn=sum(cx-ih,cy-ih,cx-ih+win,cy-ih+win),out=sum(cx-oh,cy-oh,cx-oh+outer,cy-oh+outer),inner=inn.sum/inn.area;if(inner<.48)continue;const ring=Math.max(0,out.sum-inn.sum)/Math.max(1,out.area-inn.area),score=inner-.82*ring;if(!best||score>best.score)best={x:cx,y:cy,score}}
- return best&&best.score>.18?best:null;
+ const w=img.width,h=img.height,d=img.data;
+ x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(w,Math.floor(x1));y1=Math.min(h,Math.floor(y1));
+ const dark=new Uint8Array(w*h);
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+   const p=(y*w+x)*4,g=d[p]*.299+d[p+1]*.587+d[p+2]*.114;
+   dark[y*w+x]=g<145?1:0;
+ }
+ const iw=w+1,integ=new Uint32Array((w+1)*(h+1));
+ for(let y=1;y<=h;y++){let row=0;for(let x=1;x<=w;x++){row+=dark[(y-1)*w+(x-1)];integ[y*iw+x]=integ[(y-1)*iw+x]+row}}
+ function sum(ax,ay,bx,by){
+   ax=Math.max(0,Math.floor(ax));ay=Math.max(0,Math.floor(ay));bx=Math.min(w,Math.floor(bx));by=Math.min(h,Math.floor(by));
+   if(bx<=ax||by<=ay)return{sum:0,area:1};
+   return{sum:integ[by*iw+bx]-integ[ay*iw+bx]-integ[by*iw+ax]+integ[ay*iw+ax],area:(bx-ax)*(by-ay)};
+ }
+ const step=Math.max(2,Math.round(win/5)),outer=Math.round(win*2.25),ih=Math.floor(win/2),oh=Math.floor(outer/2);
+ let best=null;
+ for(let cy=y0+oh;cy<y1-oh;cy+=step)for(let cx=x0+oh;cx<x1-oh;cx+=step){
+   const inn=sum(cx-ih,cy-ih,cx-ih+win,cy-ih+win);
+   const out=sum(cx-oh,cy-oh,cx-oh+outer,cy-oh+outer);
+   const inner=inn.sum/inn.area;
+   if(inner<.62)continue;
+   const ring=Math.max(0,out.sum-inn.sum)/Math.max(1,out.area-inn.area);
+   // Registration blocks should be very dark inside and much lighter immediately around them.
+   const contrast=inner-ring;
+   const score=inner*1.15- ring*.95 + contrast*.55;
+   if(!best||score>best.score)best={x:cx,y:cy,score,win};
+ }
+ return best&&best.score>.55?best:null;
 }
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
 function warpPage(src,pts,W,H){
@@ -367,7 +408,7 @@ function saveScan(){
  const scans=safeParse(localStorage.getItem(SCAN_REG),[]);scans.push(rec);localStorage.setItem(SCAN_REG,JSON.stringify(scans));localStorage.setItem('smartScannerCurrentScan',JSON.stringify(rec));
  saveStatus.className='status ok';saveStatus.textContent='Saved: '+learner.name+' • '+score+'/'+total;saveStatus.classList.remove('hidden');setTimeout(rescan,700);
 }
-function rescan(){currentScan=null;warpedImage=null;reviewCard.classList.add('hidden');saveCard.classList.add('hidden');photoPreview.removeAttribute('src');photoPreview.style.display='none';photoPlaceholder.style.display='flex';setScanStatus('Ready for the next paper.','ok');window.scrollTo({top:0,behavior:'smooth'})}
+function rescan(){currentScan=null;warpedImage=null;reviewCard.classList.add('hidden');saveCard.classList.add('hidden');alignedPreviewBox.classList.add('hidden');alignedPreview.removeAttribute('src');photoPreview.removeAttribute('src');photoPreview.style.display='none';photoPlaceholder.style.display='flex';setScanStatus('Ready for the next paper.','ok');window.scrollTo({top:0,behavior:'smooth'})}
 init();
 </script>
 </body>
