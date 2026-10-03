@@ -111,6 +111,9 @@ details{border:1px solid var(--line);border-radius:12px;background:#fff;margin-t
 
 <script>
 const ENDPOINT_KEY='smartScannerSyncEndpoint';
+const DEFAULT_ENDPOINT='https://script.google.com/macros/s/AKfycbxdlCSqyQUX8dw7N1l1HV6E2VYnGr2xmWeb7y33lCm8OnfK1bGSQd7NKpuYjWIT4Z9X/exec';
+const ENDPOINT_VERSION='2026-10-03-2';
+const ENDPOINT_VERSION_KEY='smartScannerSyncEndpointVersion';
 const PAIR_KEY='smartScannerPairId';
 const SHEET_KEY='smartScannerAnswerSheetDraft';
 const CURRENT_KEY='smartScannerCurrentAnswerKey';
@@ -123,7 +126,7 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function parse(s,f=null){try{return JSON.parse(s)}catch(e){return f}}
 function show(el,text,kind=''){el.textContent=text;el.className='status '+kind;el.classList.remove('hidden')}
 function normalizeEndpoint(v){return String(v||'').trim().replace(/\/+$/,'')}
-function endpointValue(){return normalizeEndpoint(endpoint.value||localStorage.getItem(ENDPOINT_KEY)||'')}
+function endpointValue(){return normalizeEndpoint(endpoint.value||localStorage.getItem(ENDPOINT_KEY)||DEFAULT_ENDPOINT)}
 function pairId(){return String(localStorage.getItem(PAIR_KEY)||'').toUpperCase()}
 
 function saveEndpoint(){
@@ -349,7 +352,12 @@ function applyDeviceView(){
  }
 }
 function init(){
- endpoint.value=localStorage.getItem(ENDPOINT_KEY)||'';
+ const savedVersion=localStorage.getItem(ENDPOINT_VERSION_KEY);
+ if(savedVersion!==ENDPOINT_VERSION){
+   localStorage.setItem(ENDPOINT_KEY,DEFAULT_ENDPOINT);
+   localStorage.setItem(ENDPOINT_VERSION_KEY,ENDPOINT_VERSION);
+ }
+ endpoint.value=localStorage.getItem(ENDPOINT_KEY)||DEFAULT_ENDPOINT;
  applyDeviceView();
  refreshSummary();
  acceptPairFromLink();
