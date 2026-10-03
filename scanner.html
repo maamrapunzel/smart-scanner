@@ -109,8 +109,11 @@ const SHEET_DRAFT='smartScannerAnswerSheetDraft';
 const SCAN_REG='smartScannerScans';
 const FRAME_W=900,FRAME_H=1312;
 let currentKey=null,currentMap=null,currentScan=null,warpedImage=null,layoutReady=false;
+let mediaStream=null,liveTimer=null,liveBusy=false,stableFrames=0,lastLivePts=null,autoCaptureLocked=false;
 
 const cameraInput=document.getElementById('cameraInput'),galleryInput=document.getElementById('galleryInput');
+const liveVideo=document.getElementById('liveVideo'),liveBadge=document.getElementById('liveBadge');
+const startScanBtn=document.getElementById('startScanBtn'),stopScanBtn=document.getElementById('stopScanBtn');
 cameraInput.addEventListener('change',photoSelected);galleryInput.addEventListener('change',photoSelected);
 document.getElementById('layoutFrame').addEventListener('load',()=>{layoutReady=true;activateBuilderPrintCss();refreshLayoutMap();});
 
@@ -202,24 +205,112 @@ function measurePaperMap(paper,entries){
    return{kind:'hand',entryId:e.id,rect:normRect(unionRect(answerEls),4),boxCount:answerEls.length,boxRects:answerEls.map(x=>normRect(x.getBoundingClientRect(),2))};
  });
 }
-function openCamera(){if(!currentKey||!currentMap){scanStatus.className='status bad';scanStatus.textContent='Wait until the Answer Key and scan layout are ready.';return}cameraInput.value='';cameraInput.click()}
-function openGallery(){if(!currentKey||!currentMap){scanStatus.className='status bad';scanStatus.textContent='Wait until the Answer Key and scan layout are ready.';return}galleryInput.value='';galleryInput.click()}
-
-async function photoSelected(ev){
- const file=ev.target.files?.[0];if(!file)return;
- if(!file.type?.startsWith('image/')){setScanStatus('Please choose an image file.','bad');return}
- showPreview(file);setScanStatus('Opening photo…','warn');
+async function openCamera(){
+ if(!currentKey||!currentMap){setScanStatus('Wait until the Answer Key and scan layout are ready.','bad');return}
+ if(mediaStream)return;
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+   cameraInput.value='';cameraInput.click();
+   setScanStatus('Live camera is not supported here. Using the phone camera as fallback.','warn');
+   return;
+ }
  try{
-   const source=await decodePhoto(file),imageData=imageToImageData(source);
-   setScanStatus('Finding the four black corner markers…','warn');
-   const pts=findFourMarkers(imageData);
+   currentScan=null;autoCaptureLocked=false;stableFrames=0;lastLivePts=null;
+   reviewCard.classList.add('hidden');saveCard.classList.add('hidden');alignedPreviewBox.classList.add('hidden');
+   mediaStream=await navigator.mediaDevices.getUserMedia({
+     audio:false,
+     video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}
+   });
+   liveVideo.srcObject=mediaStream;
+   await liveVideo.play();
+   liveVideo.style.display='block';photoPreview.style.display='none';photoPlaceholder.style.display='none';
+   liveBadge.style.display='block';liveBadge.className='liveBadge warn';liveBadge.textContent='Looking for 4 black blocks…';
+   startScanBtn.classList.add('hidden');stopScanBtn.classList.remove('hidden');
+   setScanStatus('Live scanner active. Show the whole sheet and all 4 black blocks.','warn');
+   scheduleLiveAnalysis(300);
+ }catch(e){
+   console.error(e);stopLiveScanner(false);
+   setScanStatus('Could not start the live camera. Allow camera permission, then try again.','bad');
+ }
+}
+function stopLiveScanner(showMessage){
+ if(liveTimer){clearTimeout(liveTimer);liveTimer=null}
+ liveBusy=false;stableFrames=0;lastLivePts=null;autoCaptureLocked=false;
+ if(mediaStream){mediaStream.getTracks().forEach(function(t){t.stop()});mediaStream=null}
+ liveVideo.pause();liveVideo.srcObject=null;liveVideo.style.display='none';liveBadge.style.display='none';
+ startScanBtn.classList.remove('hidden');stopScanBtn.classList.add('hidden');
+ if(photoPreview.style.display!=='block')photoPlaceholder.style.display='flex';
+ if(showMessage)setScanStatus('Scanner stopped. Tap Start Scanner when ready.','warn');
+}
+function openGallery(){
+ if(!currentKey||!currentMap){setScanStatus('Wait until the Answer Key and scan layout are ready.','bad');return}
+ stopLiveScanner(false);galleryInput.value='';galleryInput.click();
+}
+function scheduleLiveAnalysis(delay){
+ if(!mediaStream||autoCaptureLocked)return;
+ if(liveTimer)clearTimeout(liveTimer);
+ liveTimer=setTimeout(analyzeLiveFrame,delay||650);
+}
+function markersClose(a,b,img){
+ if(!a||!b)return false;
+ var keys=['tl','tr','bl','br'],scale=Math.max(img.width,img.height),sum=0;
+ for(var i=0;i<keys.length;i++)sum+=dist(a[keys[i]],b[keys[i]]);
+ return (sum/keys.length)<scale*.016;
+}
+async function analyzeLiveFrame(){
+ if(!mediaStream||liveBusy||autoCaptureLocked)return;
+ liveBusy=true;
+ try{
+   var imageData=imageToImageData(liveVideo,850);
+   var pts=findFourMarkers(imageData);
+   stableFrames=markersClose(pts,lastLivePts,imageData)?stableFrames+1:1;
+   lastLivePts=pts;
+   liveBadge.className='liveBadge '+(stableFrames>=2?'ok':'warn');
+   liveBadge.textContent=stableFrames>=3?'Stable — scanning…':'4 blocks found • Hold steady '+stableFrames+'/3';
+   setScanStatus('Four corner blocks found. Hold steady for automatic scan.','ok');
+   if(stableFrames>=3){
+     autoCaptureLocked=true;
+     showImageDataPreview(imageData);
+     stopCameraTracks();
+     await processImageData(imageData,pts,'Live scan');
+     return;
+   }
+ }catch(e){
+   stableFrames=0;lastLivePts=null;
+   liveBadge.className='liveBadge warn';liveBadge.textContent='Looking for 4 black blocks…';
+   setScanStatus('Move the phone until the full sheet and all 4 black blocks are visible.','warn');
+ }
+ liveBusy=false;
+ if(mediaStream&&!autoCaptureLocked)scheduleLiveAnalysis(650);
+}
+function stopCameraTracks(){
+ if(liveTimer){clearTimeout(liveTimer);liveTimer=null}
+ if(mediaStream){mediaStream.getTracks().forEach(function(t){t.stop()});mediaStream=null}
+ liveVideo.pause();liveVideo.srcObject=null;liveVideo.style.display='none';liveBadge.style.display='none';
+ startScanBtn.classList.remove('hidden');stopScanBtn.classList.add('hidden');
+}
+async function processImageData(imageData,pts,label){
+ try{
+   if(!pts){setScanStatus('Finding the four black corner blocks…','warn');pts=findFourMarkers(imageData)}
    setScanStatus('Straightening the answer sheet…','warn');
    warpedImage=warpPage(imageData,pts,FRAME_W,FRAME_H);
    showAlignedPreview();
    setScanStatus('Reading aligned answer areas and bubble marks…','warn');
    currentScan=readDynamicSheet(warpedImage,currentMap,currentKey.entries);
    renderReview();
-   setScanStatus('Scan complete. The page was aligned from the 4 black blocks. Review orange and handwritten items before saving.','ok');
+   setScanStatus((label||'Scan')+' complete. Review orange and handwritten items before saving.','ok');
+ }catch(e){
+   console.error(e);autoCaptureLocked=false;
+   setScanStatus('Scan failed: '+e.message,'bad');
+ }
+}
+
+async function photoSelected(ev){
+ const file=ev.target.files&&ev.target.files[0];if(!file)return;
+ if(file.type&&file.type.indexOf('image/')!==0){setScanStatus('Please choose an image file.','bad');return}
+ stopLiveScanner(false);showPreview(file);setScanStatus('Opening photo…','warn');
+ try{
+   const source=await decodePhoto(file),imageData=imageToImageData(source,1900);
+   await processImageData(imageData,null,'Photo scan');
  }catch(e){console.error(e);setScanStatus('Scan failed: '+e.message,'bad')}
 }
 function setScanStatus(t,kind=''){scanStatus.className='status '+kind;scanStatus.textContent=t}
@@ -235,12 +326,21 @@ async function decodePhoto(file){
  if(window.createImageBitmap){try{return await createImageBitmap(file,{imageOrientation:'from-image'})}catch(e){try{return await createImageBitmap(file)}catch(e2){}}}
  return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{URL.revokeObjectURL(u);res(img)};img.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('Could not open photo.'))};img.src=u});
 }
-function imageToImageData(source){
- const c=capture,ctx=c.getContext('2d',{willReadFrequently:true}),sw=source.width||source.naturalWidth,sh=source.height||source.naturalHeight;
- const maxLong=1900,scale=Math.min(1,maxLong/Math.max(sw,sh));let dw=Math.round(sw*scale),dh=Math.round(sh*scale);
+function imageToImageData(source,maxLong){
+ const c=capture,ctx=c.getContext('2d',{willReadFrequently:true});
+ const sw=source.videoWidth||source.naturalWidth||source.width,sh=source.videoHeight||source.naturalHeight||source.height;
+ maxLong=maxLong||1900;
+ if(!sw||!sh)throw new Error('Camera frame is not ready yet.');
+ const scale=Math.min(1,maxLong/Math.max(sw,sh));let dw=Math.round(sw*scale),dh=Math.round(sh*scale);
+ ctx.setTransform(1,0,0,1,0,0);
  if(dw>dh){c.width=dh;c.height=dw;ctx.save();ctx.translate(c.width,0);ctx.rotate(Math.PI/2);ctx.drawImage(source,0,0,dw,dh);ctx.restore()}
  else{c.width=dw;c.height=dh;ctx.drawImage(source,0,0,dw,dh)}
  return ctx.getImageData(0,0,c.width,c.height);
+}
+function showImageDataPreview(img){
+ const cv=document.createElement('canvas');cv.width=img.width;cv.height=img.height;
+ cv.getContext('2d').putImageData(img,0,0);
+ photoPreview.src=cv.toDataURL('image/jpeg',.88);photoPreview.style.display='block';photoPlaceholder.style.display='none';
 }
 function findFourMarkers(img){
  const w=img.width,h=img.height;
