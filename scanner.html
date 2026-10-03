@@ -25,7 +25,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 </style>
 </head>
 <body>
-<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V4.5 • SOLID BLOCK LOCK</span></header>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V4.6 • FULL PAGE WARP</span></header>
 
 <main class="wrap">
  <div class="hero">
@@ -66,7 +66,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
    </div>
    <div id="scanStatus" class="status" style="margin-top:12px">Ready when your Answer Key is loaded.</div>
    <div id="alignedPreviewBox" class="hidden" style="margin-top:12px">
-    <div class="help" style="margin-bottom:6px"><b>Aligned Page Preview</b> — this should show almost the whole answer sheet, straight and centered. If it looks zoomed or cropped, do not trust the score.</div>
+    <div class="help" style="margin-bottom:6px"><b>Aligned Page Preview</b> — this should now show the <b>whole answer sheet</b>, straight and centered, including the page margins around the four black blocks.</div>
     <img id="alignedPreview" style="display:block;width:min(100%,430px);margin:auto;border:2px solid #d7cfd3;border-radius:10px;background:#fff">
    </div>
   </div>
@@ -101,14 +101,14 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 
 <canvas id="capture"></canvas>
 <canvas id="warp"></canvas>
-<iframe id="layoutFrame" src="./answer-sheet-builder.html?scanner-layout=4"></iframe>
+<iframe id="layoutFrame" src="./answer-sheet-builder.html?scanner-layout=5"></iframe>
 
 <script>
 const KEY_REG='smartScannerAnswerKeys';
 const CURRENT_KEY='smartScannerCurrentAnswerKey';
 const SHEET_DRAFT='smartScannerAnswerSheetDraft';
 const SCAN_REG='smartScannerScans';
-const FRAME_W=900,FRAME_H=1312;
+const FRAME_W=900,FRAME_H=1273;
 let currentKey=null,currentMap=null,currentScan=null,warpedImage=null,layoutReady=false;
 let mediaStream=null,liveTimer=null,liveBusy=false,stableFrames=0,lastLivePts=null,autoCaptureLocked=false;
 
@@ -188,23 +188,47 @@ function unionRect(els){
  return{left:l,top:t,right:rr,bottom:b,width:rr-l,height:b-t};
 }
 function measurePaperMap(paper,entries){
- const tl=center(paper.querySelector('.c1')),tr=center(paper.querySelector('.c2')),bl=center(paper.querySelector('.c3'));
- const dx=tr.x-tl.x,dy=bl.y-tl.y;if(dx<=0||dy<=0)throw new Error('Invalid marker geometry.');
+ const pr=paper.getBoundingClientRect();
+ if(pr.width<=0||pr.height<=0)throw new Error('Invalid paper geometry.');
+ const tl=center(paper.querySelector('.c1')),tr=center(paper.querySelector('.c2')),bl=center(paper.querySelector('.c3')),br=center(paper.querySelector('.c4'));
  const rows=[...paper.querySelectorAll('.mcqRow,.groupMcqRow,.boxRow,.coordRow,.shortRow')];
  if(rows.length!==entries.length)throw new Error('Layout entries do not match the Answer Key ('+rows.length+' vs '+entries.length+'). Re-open the Answer Sheet and save the key again.');
- function nx(x){return(x-tl.x)/dx}function ny(y){return(y-tl.y)/dy}
- function normRect(r,padPx=2){
+ function nx(x){return(x-pr.left)/pr.width}
+ function ny(y){return(y-pr.top)/pr.height}
+ function normRect(r,padPx){
+   padPx=padPx||2;
    return{x0:nx(r.left-padPx),y0:ny(r.top-padPx),x1:nx(r.right+padPx),y1:ny(r.bottom+padPx)}
  }
- return entries.map((e,i)=>{
+ const map=entries.map(function(e,i){
    const row=rows[i],bubs=[...row.querySelectorAll('.bubble')];
    if(bubs.length){
-     return{kind:'bubble',entryId:e.id,labels:bubs.map(x=>x.textContent.trim()),bubbles:bubs.map(x=>{const c=center(x);return{x:nx(c.x),y:ny(c.y),r:Math.max(.002,(c.w/2)/dx)}})};
+     return{
+       kind:'bubble',
+       entryId:e.id,
+       labels:bubs.map(function(x){return x.textContent.trim()}),
+       bubbles:bubs.map(function(x){
+         const cc=center(x);
+         return{x:nx(cc.x),y:ny(cc.y),r:Math.max(.002,(cc.w/2)/pr.width)};
+       })
+     };
    }
    let answerEls=[...row.querySelectorAll('.coordPairBox,.numValueBox,.shortField,.box')];
    if(!answerEls.length)answerEls=[row];
-   return{kind:'hand',entryId:e.id,rect:normRect(unionRect(answerEls),4),boxCount:answerEls.length,boxRects:answerEls.map(x=>normRect(x.getBoundingClientRect(),2))};
+   return{
+     kind:'hand',
+     entryId:e.id,
+     rect:normRect(unionRect(answerEls),4),
+     boxCount:answerEls.length,
+     boxRects:answerEls.map(function(x){return normRect(x.getBoundingClientRect(),2)})
+   };
  });
+ map.pageMarkers={
+   tl:{x:nx(tl.x),y:ny(tl.y)},
+   tr:{x:nx(tr.x),y:ny(tr.y)},
+   bl:{x:nx(bl.x),y:ny(bl.y)},
+   br:{x:nx(br.x),y:ny(br.y)}
+ };
+ return map;
 }
 async function openCamera(){
  if(!currentKey||!currentMap){setScanStatus('Wait until the Answer Key and scan layout are ready.','bad');return}
@@ -311,7 +335,7 @@ async function processImageData(imageData,pts,label){
  try{
    if(!pts){setScanStatus('Finding the four black corner blocks…','warn');pts=findFourMarkers(imageData)}
    setScanStatus('Straightening the answer sheet…','warn');
-   warpedImage=warpPage(imageData,pts,FRAME_W,FRAME_H);
+   warpedImage=warpPage(imageData,pts,FRAME_W,FRAME_H,currentMap&&currentMap.pageMarkers);
    showAlignedPreview();
    setScanStatus('Reading aligned answer areas and bubble marks…','warn');
    currentScan=readDynamicSheet(warpedImage,currentMap,currentKey.entries);
@@ -466,10 +490,30 @@ function findFourMarkers(img){
  return{tl:best.tl,tr:best.tr,bl:best.bl,br:best.br};
 }
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
-function warpPage(src,pts,W,H){
- const h=homography([{x:0,y:0},{x:W-1,y:0},{x:0,y:H-1},{x:W-1,y:H-1}],[pts.tl,pts.tr,pts.bl,pts.br]);
+function warpPage(src,pts,W,H,pageMarkers){
+ if(!pageMarkers)throw new Error('Full-page marker map is not ready.');
+ const from=[
+   {x:pageMarkers.tl.x*(W-1),y:pageMarkers.tl.y*(H-1)},
+   {x:pageMarkers.tr.x*(W-1),y:pageMarkers.tr.y*(H-1)},
+   {x:pageMarkers.bl.x*(W-1),y:pageMarkers.bl.y*(H-1)},
+   {x:pageMarkers.br.x*(W-1),y:pageMarkers.br.y*(H-1)}
+ ];
+ const to=[pts.tl,pts.tr,pts.bl,pts.br];
+ const h=homography(from,to);
  const out=new ImageData(W,H),sd=src.data,od=out.data,sw=src.width,sh=src.height;
- for(let y=0;y<H;y++)for(let x=0;x<W;x++){const den=h[6]*x+h[7]*y+1,sx=(h[0]*x+h[1]*y+h[2])/den,sy=(h[3]*x+h[4]*y+h[5])/den,ix=Math.round(sx),iy=Math.round(sy),op=(y*W+x)*4;if(ix>=0&&iy>=0&&ix<sw&&iy<sh){const sp=(iy*sw+ix)*4;od[op]=sd[sp];od[op+1]=sd[sp+1];od[op+2]=sd[sp+2];od[op+3]=255}else{od[op]=od[op+1]=od[op+2]=255;od[op+3]=255}}
+ for(let y=0;y<H;y++){
+   for(let x=0;x<W;x++){
+     const den=h[6]*x+h[7]*y+1;
+     const sx=(h[0]*x+h[1]*y+h[2])/den,sy=(h[3]*x+h[4]*y+h[5])/den;
+     const ix=Math.round(sx),iy=Math.round(sy),op=(y*W+x)*4;
+     if(ix>=0&&iy>=0&&ix<sw&&iy<sh){
+       const sp=(iy*sw+ix)*4;
+       od[op]=sd[sp];od[op+1]=sd[sp+1];od[op+2]=sd[sp+2];od[op+3]=255;
+     }else{
+       od[op]=od[op+1]=od[op+2]=255;od[op+3]=255;
+     }
+   }
+ }
  warp.width=W;warp.height=H;warp.getContext('2d').putImageData(out,0,0);return out;
 }
 function homography(from,to){const A=[],b=[];for(let i=0;i<4;i++){const u=from[i].x,v=from[i].y,x=to[i].x,y=to[i].y;A.push([u,v,1,0,0,0,-x*u,-x*v]);b.push(x);A.push([0,0,0,u,v,1,-y*u,-y*v]);b.push(y)}return solve(A,b)}
