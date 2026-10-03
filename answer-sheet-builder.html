@@ -28,7 +28,7 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}.field,sele
 .previewToolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.paperWrap{overflow:auto;background:#e8e3e6;border-radius:14px;padding:18px}.paper{width:210mm;height:297mm;margin:auto;background:#fff;position:relative;color:#111;padding:12mm 12mm 12mm;box-shadow:0 6px 20px #0002;display:flex;flex-direction:column;overflow:hidden}
 .corner{position:absolute;width:6mm;height:6mm;background:#000}.c1{left:7mm;top:7mm}.c2{right:7mm;top:7mm}.c3{left:7mm;bottom:7mm}.c4{right:7mm;bottom:7mm}
 .pHead{text-align:center;margin:0 8mm 4mm}.pHead h1{font-size:18pt;margin:0}.pHead p{font-size:8pt;margin:1.2mm 0 0}
-.infoGrid{display:grid;grid-template-columns:repeat(12,1fr);gap:2mm;margin:0 3mm 4mm}.infoBox{border:1px solid #222;border-radius:2mm;padding:2mm;min-height:12mm;font-size:7pt}.infoBox b{display:block;margin-bottom:1mm}.answerSections{display:grid;grid-template-columns:1fr 1fr;gap:4mm;flex:1;min-height:0;align-items:stretch}.answerSec{border:1px solid #222;border-radius:2.5mm;overflow:hidden;display:flex;flex-direction:column;min-height:0}.answerSec.full{grid-column:1/-1}.answerSec h4{margin:0;padding:2mm 2.5mm;background:#f3d9e5;border-bottom:1px solid #222;font-size:8pt;flex:0 0 auto}.answerSec .body{padding:2mm 2.5mm;flex:1;display:flex;flex-direction:column;justify-content:space-evenly;min-height:0}.mcqRow{display:grid;grid-template-columns:8mm repeat(10,7mm);gap:1.2mm;align-items:center;min-height:7mm;font-size:7pt}.bubble{width:5mm;height:5mm;border:.5mm solid #111;border-radius:50%;display:grid;place-items:center;font-size:5.5pt}.boxRow{display:grid;grid-template-columns:8mm 1fr;gap:2mm;align-items:center;margin:0;font-size:7pt}.boxes{display:flex;gap:1mm;flex-wrap:wrap}.box{width:7mm;height:7mm;border:.45mm solid #111}.tiny{font-size:6pt;color:#555}.footer{flex:0 0 auto;text-align:center;font-size:5.5pt;color:#555;margin-top:3mm}
+.studentHeader{display:grid;grid-template-columns:minmax(0,1fr) 48mm;gap:3mm;margin:0 3mm 4mm}.studentLeft,.studentRight{display:flex;flex-direction:column;gap:2mm}.infoBox{border:1px solid #222;border-radius:2mm;padding:2mm;min-height:12mm;font-size:7pt}.infoBox.scoreBox{min-height:21mm;display:flex;flex-direction:column;justify-content:space-between}.infoBox.scoreBox .scoreLine{font-size:15pt;font-weight:800;text-align:center;min-height:9mm}.extraInfoGrid{display:grid;grid-template-columns:repeat(12,1fr);gap:2mm;margin-top:2mm}.infoBox b{display:block;margin-bottom:1mm}.answerSections{display:grid;grid-template-columns:1fr 1fr;gap:4mm;flex:1;min-height:0;align-items:stretch}.answerSec{border:1px solid #222;border-radius:2.5mm;overflow:hidden;display:flex;flex-direction:column;min-height:0}.answerSec.full{grid-column:1/-1}.answerSec h4{margin:0;padding:2mm 2.5mm;background:#f3d9e5;border-bottom:1px solid #222;font-size:8pt;flex:0 0 auto}.answerSec .body{padding:2mm 2.5mm;flex:1;display:flex;flex-direction:column;justify-content:space-evenly;min-height:0}.mcqRow{display:grid;grid-template-columns:8mm repeat(10,7mm);gap:1.2mm;align-items:center;min-height:7mm;font-size:7pt}.bubble{width:5mm;height:5mm;border:.5mm solid #111;border-radius:50%;display:grid;place-items:center;font-size:5.5pt}.boxRow{display:grid;grid-template-columns:8mm 1fr;gap:2mm;align-items:center;margin:0;font-size:7pt}.boxes{display:flex;gap:1mm;flex-wrap:wrap}.box{width:7mm;height:7mm;border:.45mm solid #111}.tiny{font-size:6pt;color:#555}.footer{flex:0 0 auto;text-align:center;font-size:5.5pt;color:#555;margin-top:3mm}
 .hidden{display:none!important}
 @media(max-width:860px){.wizard{grid-template-columns:1fr}.steps{position:static;display:flex;overflow:auto}.stepBtn{min-width:180px}.grid2,.grid3{grid-template-columns:1fr}.paper{transform-origin:top left}}
 @media print{body{background:#fff}.topbar,.steps,.panelHead,.actions,.previewToolbar{display:none!important}.wrap{max-width:none;margin:0;padding:0}.wizard{display:block}.panel{border:0;box-shadow:none}.panelBody{padding:0}.paperWrap{background:#fff;padding:0}.paper{box-shadow:none;margin:0;page-break-after:always}@page{size:A4 portrait;margin:0}}
@@ -64,7 +64,7 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}.field,sele
 <thead><tr><th>Usage</th><th class="center">Enabled?</th><th>Displayed Label on Answer Sheet</th><th>Width</th></tr></thead>
 <tbody id="headerRows"></tbody>
 </table>
-<div class="help">Choose the assessment label as Quiz, Summative, or Exam. Grade & Section appears as one field. Score may be included as a blank box for teacher use.</div>
+<div class="help">Choose the assessment label as Quiz, Summative, or Exam. In the printed sheet, Grade & Section is automatically placed below Name, while Score appears at the upper right.</div>
 </div>
 
 <div id="step3" class="stepPane hidden">
@@ -252,13 +252,22 @@ function widthSpan(w){return w==='Large'?6:w==='Small'?2:4}
 function renderPreview(){
  collect();
  const idx=previewLearner.value;const learner=idx!==''&&state.learners[Number(idx)]?state.learners[Number(idx)]:null;
- let info=state.headers.filter(h=>h.enabled).map(h=>{
-  let value='';
-  if(learner&&h.usage==='Name')value=learner.name;
-  if(learner&&h.usage==='Grade & Section')value=learner.section;
-  return `<div class="infoBox" style="grid-column:span ${widthSpan(h.width)}"><b>${esc(h.label||h.usage)}</b>${esc(value)}</div>`;
- }).join('');
- if(state.includeId)info+=`<div class="infoBox" style="grid-column:span 4"><b>${esc(state.idLabel)}</b></div>`;
+ const enabledHeaders=state.headers.filter(h=>h.enabled);
+ const byUsage=u=>enabledHeaders.find(h=>h.usage===u);
+ const nameH=byUsage('Name');
+ const gradeH=byUsage('Grade & Section');
+ const assessH=byUsage('Assessment');
+ const scoreH=state.headers.find(h=>h.usage==='Other 1' && h.enabled);
+ const extras=enabledHeaders.filter(h=>!['Name','Grade & Section','Assessment','Other 1'].includes(h.usage));
+
+ const nameBox=nameH?`<div class="infoBox"><b>${esc(nameH.label||'Name')}</b>${esc(learner?learner.name:'')}</div>`:'';
+ const gradeBox=gradeH?`<div class="infoBox"><b>${esc(gradeH.label||'Grade & Section')}</b>${esc(learner?learner.section:'')}</div>`:'';
+ const scoreBox=scoreH?`<div class="infoBox scoreBox"><b>${esc(scoreH.label||'Score')}</b><div class="scoreLine"></div></div>`:'';
+ const assessBox=assessH?`<div class="infoBox"><b>Assessment</b><div>${esc(assessH.label||'Quiz')}</div></div>`:'';
+ let extraHtml=extras.map(h=>`<div class="infoBox" style="grid-column:span ${widthSpan(h.width)}"><b>${esc(h.label||h.usage)}</b></div>`).join('');
+ if(state.includeId)extraHtml+=`<div class="infoBox" style="grid-column:span 4"><b>${esc(state.idLabel)}</b></div>`;
+
+ const info=`<div class="studentHeader"><div class="studentLeft">${nameBox}${gradeBox}</div><div class="studentRight">${scoreBox}${assessBox}</div></div>${extraHtml?`<div class="extraInfoGrid">${extraHtml}</div>`:''}`;
 
  const groups=[];let cur=null;
  state.questions.forEach((q,i)=>{
@@ -281,7 +290,7 @@ function renderPreview(){
  paperHost.innerHTML=`<div class="paper">
  <span class="corner c1"></span><span class="corner c2"></span><span class="corner c3"></span><span class="corner c4"></span>
  <div class="pHead"><h1>SMART SCANNER</h1><p>${esc(state.name||'ANSWER SHEET')} • ${state.questions.length} ITEMS</p></div>
- <div class="infoGrid">${info}</div>
+ ${info}
  <div class="answerSections">${sections||'<div class="empty">No questions added yet.</div>'}</div>
  <div class="footer">SMART Scanner • Answer Sheet Builder</div></div>`;
  scalePaper();
