@@ -140,7 +140,7 @@ function jsonp(url,timeout=12000){
    const timer=setTimeout(()=>{cleanup();reject(new Error('Connection timed out.'))},timeout);
    function cleanup(){clearTimeout(timer);delete window[cb];s.remove()}
    window[cb]=data=>{cleanup();resolve(data)};
-   s.onerror=()=>{cleanup();reject(new Error('Could not connect to the sync service.'))};
+   s.onerror=()=>{cleanup();reject(new Error('Sync service cannot be reached. Check the Google Apps Script Web App deployment and make sure the saved URL ends in /exec and is accessible to Anyone. If the Web App URL changed, pair the phone again.'))};
    s.src=url+(url.includes('?')?'&':'?')+'callback='+encodeURIComponent(cb);
    document.head.appendChild(s);
  });
@@ -153,7 +153,7 @@ async function testEndpoint(){
   const data=await jsonp(endpointValue()+'?action=ping');
   if(!data?.ok)throw new Error(data?.error||'Sync service did not respond.');
   show(endpointStatus,'Connected to SMART Scanner Sync.','ok');
- }catch(e){show(endpointStatus,e.message,'bad')}
+ }catch(e){show(endpointStatus,e.message+' If this is a new deployment, copy the latest /exec URL, save it here, then pair the phone again.','bad')}
 }
 
 function randomPairId(){
