@@ -1,4 +1,4 @@
-const CACHE = 'smart-scanner-v2-shell-21';
+const CACHE = 'smart-scanner-v2-shell-22';
 const SHELL = [
   './','./index.html','./styles.css','./app.js',
   './app-part1.js','./app-part2.js','./app-part3.js',
@@ -18,9 +18,14 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(event.request.url);
 
-  // Answer Sheet Builder changes frequently during development.
+  // Builder, sync, and scanner pages change frequently during development.
   // Use network-first so GitHub updates appear immediately, with cache fallback offline.
-  if(url.pathname.endsWith('/answer-sheet-builder.html')){
+  if(
+    url.pathname.endsWith('/answer-sheet-builder.html') ||
+    url.pathname.endsWith('/answer-key-builder.html') ||
+    url.pathname.endsWith('/sync.html') ||
+    url.pathname.endsWith('/scanner.html')
+  ){
     event.respondWith(
       fetch(event.request, {cache:'no-store'}).then(response => {
         const copy = response.clone();
