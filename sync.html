@@ -149,11 +149,26 @@ function jsonp(url,timeout=12000){
  });
 }
 
+async function syncGet(url){
+ try{
+   return await jsonp(url);
+ }catch(jsonpErr){
+   try{
+     const res=await fetch(url,{method:'GET',cache:'no-store',redirect:'follow'});
+     if(!res.ok)throw new Error('HTTP '+res.status);
+     const txt=await res.text();
+     return JSON.parse(txt);
+   }catch(fetchErr){
+     throw new Error('The sync web app opens in the browser, but SMART Sync could not read its response automatically on this device. JSONP: '+String(jsonpErr.message||jsonpErr)+'; Fetch: '+String(fetchErr.message||fetchErr));
+   }
+ }
+}
+
 async function testEndpoint(){
  if(!saveEndpoint())return;
  show(endpointStatus,'Testing connection…','warn');
  try{
-  const data=await jsonp(endpointValue()+'?action=ping');
+  const data=await syncGet(endpointValue()+'?action=ping');
   if(!data?.ok)throw new Error(data?.error||'Sync service did not respond.');
   show(endpointStatus,'Connected to SMART Scanner Sync.','ok');
  }catch(e){show(endpointStatus,e.message+' If this is a new deployment, copy the latest /exec URL, save it here, then pair the phone again.','bad')}
@@ -230,7 +245,7 @@ async function uploadPackage(silent=false){
  if(!silent)show(sendStatus,'Step 1 of 3: Checking sync service…','warn');
  let ping;
  try{
-   ping=await jsonp(ep+'?action=ping');
+   ping=await syncGet(ep+'?action=ping');
  }catch(e){
    throw new Error('STEP 1 FAILED — Cannot reach the Google Apps Script Web App. Open the /exec URL in a browser. It should show JSON, not a sign-in or permission page.');
  }
@@ -253,7 +268,7 @@ async function uploadPackage(silent=false){
  for(let attempt=1;attempt<=5;attempt++){
    await new Promise(r=>setTimeout(r,900));
    try{
-     verify=await jsonp(ep+'?action=get&code='+encodeURIComponent(code));
+     verify=await syncGet(ep+'?action=get&code='+encodeURIComponent(code));
      if(verify?.ok)break;
      lastErr=verify?.error||'Upload not available yet.';
    }catch(e){lastErr=e.message||String(e)}
@@ -315,7 +330,7 @@ async function syncFromLaptop(){
    let data=null,lastErr='';
    for(let attempt=1;attempt<=4;attempt++){
      try{
-       data=await jsonp(ep+'?action=get&code='+encodeURIComponent(code));
+       data=await syncGet(ep+'?action=get&code='+encodeURIComponent(code));
        if(data?.ok)break;
        lastErr=String(data?.error||'No recent laptop sync found.');
      }catch(e){
