@@ -223,12 +223,39 @@ async function uploadPackage(silent=false){
  const ep=endpointValue();
  if(!ep)throw new Error('Set the Google Apps Script Web App URL first.');
  const payload=currentPackage(),code=ensurePairId();
- if(!silent)show(sendStatus,'Uploading latest Answer Sheet and Answer Key…','warn');
 
- await fetch(ep,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'put',code,payload})});
- await new Promise(r=>setTimeout(r,850));
- const verify=await jsonp(ep+'?action=get&code='+encodeURIComponent(code));
- if(!verify?.ok)throw new Error(verify?.error||'Upload could not be verified.');
+ if(!silent)show(sendStatus,'Step 1 of 3: Checking sync service…','warn');
+ let ping;
+ try{
+   ping=await jsonp(ep+'?action=ping');
+ }catch(e){
+   throw new Error('STEP 1 FAILED — Cannot reach the Google Apps Script Web App. Open the /exec URL in a browser. It should show JSON, not a sign-in or permission page.');
+ }
+ if(!ping?.ok)throw new Error('STEP 1 FAILED — Sync service responded but is not ready.');
+
+ if(!silent)show(sendStatus,'Step 2 of 3: Uploading latest Answer Sheet and Answer Key…','warn');
+ try{
+   await fetch(ep,{
+     method:'POST',
+     mode:'no-cors',
+     headers:{'Content-Type':'text/plain;charset=utf-8'},
+     body:JSON.stringify({action:'put',code,payload})
+   });
+ }catch(e){
+   throw new Error('STEP 2 FAILED — The browser could not send the assessment to the sync service.');
+ }
+
+ if(!silent)show(sendStatus,'Step 3 of 3: Verifying upload…','warn');
+ let verify=null,lastErr=null;
+ for(let attempt=1;attempt<=5;attempt++){
+   await new Promise(r=>setTimeout(r,900));
+   try{
+     verify=await jsonp(ep+'?action=get&code='+encodeURIComponent(code));
+     if(verify?.ok)break;
+     lastErr=verify?.error||'Upload not available yet.';
+   }catch(e){lastErr=e.message||String(e)}
+ }
+ if(!verify?.ok)throw new Error('STEP 3 FAILED — Upload was sent but could not be verified. '+(lastErr||''));
  localStorage.setItem(LAST_PUSH_KEY,new Date().toISOString());
  updatePairUI();
  return verify;
