@@ -167,6 +167,78 @@ body.print-batch .printPage.two .paper:not(.longBubbleSheet) .coordRow,
 body.print-batch .printPage.two .paper:not(.longBubbleSheet) .shortRow{min-height:5.2mm!important}
 body.print-batch .printPage.two .paper:not(.longBubbleSheet) .coordPairBox{height:5mm!important}
 body.print-batch .printPage.two .paper:not(.longBubbleSheet) .shortField{height:5mm!important}
+/* A5 mixed-sheet final fit: reclaim a few millimeters so the last grouped item stays inside the page */
+body.print-batch .printPage.two .paper:not(.longBubbleSheet){
+  padding:4.5mm 5mm 4.5mm!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .pHead{
+  margin:0 4mm .8mm!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .pHead h1{
+  font-size:11pt!important;
+  line-height:1!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .pHead p{
+  font-size:5pt!important;
+  margin:.25mm 0 0!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .studentHeader{
+  gap:1mm!important;
+  margin:0 0 1mm!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .studentLeft,
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .studentRight{
+  gap:.65mm!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .infoBox{
+  padding:.7mm!important;
+  min-height:7mm!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .infoBox.studentInfoBox{
+  height:8.7mm!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .infoBox.scoreBox{
+  min-height:9.4mm!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .answerSections{
+  gap:.9mm 1.6mm!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .answerSec h4{
+  padding:.55mm .9mm!important;
+  font-size:4.7pt!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .answerSec .body{
+  padding:.55mm .9mm!important;
+  gap:.15mm!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .groupMcqBlock{
+  margin:0 0 .35mm!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .groupMcqMain{
+  font-size:5pt!important;
+  margin-bottom:.05mm!important;
+  line-height:1!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .groupMcqRow{
+  min-height:4.25mm!important;
+  line-height:1!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .boxRow,
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .coordRow,
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .shortRow{
+  min-height:4.7mm!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .coordPairBox{
+  height:4.6mm!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .coordPairLabel{
+  font-size:3.3pt!important
+}
+body.print-batch .printPage.two .paper:not(.longBubbleSheet) .footer{
+  margin-top:.4mm!important;
+  font-size:4pt!important
+}
+
 body.print-batch .printPage.two .paper .tiny{font-size:4.5pt!important}
 body.print-batch .printPage.two .paper .footer{font-size:4.5pt!important;margin-top:1mm!important;flex:0 0 auto!important}
 
@@ -223,7 +295,7 @@ body.print-batch .printSlot.empty{outline:none}
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
-<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Answer Sheet Builder</small></div><div class="spacer"></div><span class="pill">GitHub Preview • A5-MIXED-FIT</span></header>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Answer Sheet Builder</small></div><div class="spacer"></div><span class="pill">GitHub Preview • A5-FINAL-FIT</span></header>
 <div class="wrap">
 <div class="wizard">
 <nav class="steps">
