@@ -31,8 +31,28 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}.field,sele
 .studentHeader{display:grid;grid-template-columns:minmax(0,1fr) 48mm;gap:3mm;margin:0 3mm 4mm}.studentLeft,.studentRight{display:flex;flex-direction:column;gap:2mm}.infoBox{border:1px solid #222;border-radius:2mm;padding:2mm;min-height:12mm;font-size:7pt}.infoBox.studentInfoBox{height:15mm;display:flex;flex-direction:column;justify-content:space-between}.studentValue{flex:1;display:flex;align-items:center;font-weight:800;line-height:1.05;white-space:nowrap;overflow:hidden}.studentValue.size-xl{font-size:15pt}.studentValue.size-lg{font-size:13pt}.studentValue.size-md{font-size:11pt}.studentValue.size-sm{font-size:9pt}.infoBox.scoreBox{min-height:21mm;display:flex;flex-direction:column;justify-content:space-between}.infoBox.scoreBox .scoreLine{font-size:15pt;font-weight:800;text-align:center;min-height:9mm}.extraInfoGrid{display:grid;grid-template-columns:repeat(12,1fr);gap:2mm;margin-top:2mm}.infoBox b{display:block;margin-bottom:1mm}.answerSections{display:grid;grid-template-columns:1fr 1fr;gap:4mm;flex:1;min-height:0;align-items:stretch}.answerSec{border:1px solid #222;border-radius:2.5mm;overflow:hidden;display:flex;flex-direction:column;min-height:0}.answerSec.full{grid-column:1/-1}.answerSec h4{margin:0;padding:2mm 2.5mm;background:#f3d9e5;border-bottom:1px solid #222;font-size:8pt;flex:0 0 auto}.answerSec .body{padding:2mm 2.5mm;flex:1;display:flex;flex-direction:column;justify-content:space-evenly;min-height:0}.mcqRow{display:grid;grid-template-columns:8mm repeat(10,7mm);gap:1.2mm;align-items:center;min-height:7mm;font-size:7pt}.bubble{width:5mm;height:5mm;border:.5mm solid #111;border-radius:50%;display:grid;place-items:center;font-size:5.5pt}.boxRow{display:grid;grid-template-columns:8mm 1fr;gap:2mm;align-items:center;margin:0;font-size:7pt}.boxes{display:flex;gap:1mm;flex-wrap:wrap}.box{width:7mm;height:7mm;border:.45mm solid #111}.tiny{font-size:6pt;color:#555}.footer{flex:0 0 auto;text-align:center;font-size:5.5pt;color:#555;margin-top:3mm}
 .hidden{display:none!important}
 @media(max-width:860px){.wizard{grid-template-columns:1fr}.steps{position:static;display:flex;overflow:auto}.stepBtn{min-width:180px}.grid2,.grid3{grid-template-columns:1fr}.paper{transform-origin:top left}}
+#printArea{display:none}
+.printPage{background:#fff;overflow:hidden}
+.printSlot{position:relative;overflow:hidden;background:#fff}
+@media print{
+body.print-batch{margin:0!important;background:#fff}
+body.print-batch>*:not(#printArea){display:none!important}
+body.print-batch #printArea{display:block!important}
+body.print-batch .printPage{margin:0!important;page-break-after:always!important;break-after:page;display:grid!important}
+body.print-batch .printPage:last-child{page-break-after:auto!important}
+body.print-batch .printPage.one{width:210mm;height:297mm;grid-template-columns:210mm;grid-template-rows:297mm}
+body.print-batch .printPage.two{width:297mm;height:210mm;grid-template-columns:148.5mm 148.5mm;grid-template-rows:210mm}
+body.print-batch .printPage.four{width:210mm;height:297mm;grid-template-columns:105mm 105mm;grid-template-rows:148.5mm 148.5mm}
+body.print-batch .printSlot .paper{position:absolute!important;left:0!important;top:0!important;margin:0!important;box-shadow:none!important;page-break-after:auto!important;transform-origin:top left!important}
+body.print-batch .printPage.one .paper{transform:scale(1)!important}
+body.print-batch .printPage.two .paper{transform:scale(.70710678)!important}
+body.print-batch .printPage.four .paper{transform:scale(.5)!important}
+body.print-batch .printSlot{outline:.2mm dashed #bbb}
+body.print-batch .printSlot.empty{outline:none}
+}
 @media print{body{background:#fff}.topbar,.steps,.panelHead,.actions,.previewToolbar{display:none!important}.wrap{max-width:none;margin:0;padding:0}.wizard{display:block}.panel{border:0;box-shadow:none}.panelBody{padding:0}.paperWrap{background:#fff;padding:0}.paper{box-shadow:none;margin:0;page-break-after:always}@page{size:A4 portrait;margin:0}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
@@ -88,9 +108,15 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}.field,sele
 </div>
 <div id="personalizedOptions" class="sectionBox hidden">
 <h3>Personalized Learner List</h3>
-<label>Paste Learners</label>
-<textarea id="learnerList" rows="7" placeholder="Juan Dela Cruz | Grade 8 - Acacia&#10;Maria Santos | Grade 8 - Acacia"></textarea>
-<div class="help">Format: Name | Grade & Section. Student ID is not required.</div>
+<div class="builderBtns" style="margin-top:8px">
+<label class="btn green" style="display:inline-block;margin:0;cursor:pointer">Import Excel
+<input id="learnerExcel" type="file" accept=".xlsx,.xls" hidden>
+</label>
+</div>
+<div id="importStatus" class="help">Import an Excel learner list. The app will look for Name, Grade/Section, and optional LRN/Student ID columns automatically.</div>
+<label>Or Paste Learners</label>
+<textarea id="learnerList" rows="7" placeholder="Juan Dela Cruz | Grade 8 - Acacia |&#10;Maria Santos | Grade 8 - Acacia |"></textarea>
+<div class="help">Format: Name | Grade & Section | Student ID. Student ID may be left blank.</div>
 </div>
 </div>
 
@@ -114,12 +140,18 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}.field,sele
 <div id="step5" class="stepPane hidden">
 <div class="previewToolbar">
 <button class="btn light" onclick="renderPreview()">Refresh Preview</button>
-<button class="btn dark" onclick="window.print()">Print</button>
+<select id="previewLearner" style="width:auto;min-width:220px" onchange="renderPreview()"></select>
+<select id="printLayout" style="width:auto;min-width:185px">
+<option value="1">A4 — 1 per page</option>
+<option value="2">A5 — 2 per A4 page</option>
+<option value="4">A6 — 4 per A4 page</option>
+</select>
+<button class="btn dark" onclick="printCurrent()">Print Current</button>
+<button class="btn primary" onclick="printAllLearners()">Print All</button>
 <button class="btn green" onclick="downloadPNG()">Download PNG</button>
 <button class="btn blue" onclick="downloadPDF()">Download PDF</button>
-<select id="previewLearner" style="width:auto;min-width:220px" onchange="renderPreview()"></select>
 </div>
-<div class="help" style="margin:0 0 10px">Export the currently previewed sheet as a high-resolution PNG or exact-size A4 PDF.</div>
+<div class="help" style="margin:0 0 10px">Print the current learner or all personalized learners. A4 = 1-up, A5 = 2-up per A4 page, A6 = 4-up per A4 page. PNG/PDF exports use the current preview.</div>
 <div class="paperWrap"><div id="paperHost"></div></div>
 </div>
 
@@ -132,6 +164,7 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}.field,sele
 </div>
 </div>
 
+<div id="printArea"></div>
 <div id="modal" class="modal">
 <div class="modalCard">
 <div class="modalHead"><h3 id="modalTitle">Add Questions</h3><button class="x" onclick="closeModal()">×</button></div>
@@ -170,7 +203,7 @@ function collect(){
  state.name=document.getElementById('sheetName').value.trim();
  state.mode=document.querySelector('input[name=mode]:checked')?.value||'blank';
  state.includeId=includeId.checked; state.idDigits=Number(idDigits.value); state.idLabel=idLabel.value.trim()||'Student ID';
- state.learners=learnerList.value.split(/\n+/).map(x=>x.trim()).filter(Boolean).map(line=>{let p=line.split('|').map(x=>x.trim());return{name:p[0]||'',section:p[1]||''}});
+ state.learners=learnerList.value.split(/\n+/).map(x=>x.trim()).filter(Boolean).map(line=>{let p=line.split('|').map(x=>x.trim());return{name:p[0]||'',section:p[1]||'',id:p[2]||''}});
  document.querySelectorAll('#headerRows tr').forEach((tr,i)=>{state.headers[i].enabled=tr.querySelector('.h-enabled').checked;state.headers[i].label=tr.querySelector('.h-label').value;state.headers[i].width=tr.querySelector('.h-width').value});
  saveDraft();
 }
@@ -180,7 +213,8 @@ function init(){
  loadDraft(); sheetName.value=state.name||''; renderHeaderRows();
  document.querySelectorAll('input[name=mode]').forEach(r=>r.checked=r.value===state.mode);
  includeId.checked=!!state.includeId;idDigits.value=state.idDigits||5;idLabel.value=state.idLabel||'Student ID';
- learnerList.value=(state.learners||[]).map(x=>x.name+(x.section?' | '+x.section:'')).join('\n');
+ learnerList.value=(state.learners||[]).map(x=>x.name+(x.section?' | '+x.section:'')+(x.id?' | '+x.id:' |')).join('\n');
+ if(window.learnerExcel)learnerExcel.addEventListener('change',importLearnersExcel);
  syncStudentOptions();renderQuestions();showStep(1);
 }
 function renderHeaderRows(){
@@ -191,6 +225,63 @@ function syncStudentOptions(){
  personalizedOptions.classList.toggle('hidden',(document.querySelector('input[name=mode]:checked')?.value||'blank')!=='personalized');
 }
 includeId.addEventListener('change',syncStudentOptions);document.querySelectorAll('input[name=mode]').forEach(x=>x.addEventListener('change',syncStudentOptions));
+function normHeader(v){return String(v??'').trim().toLowerCase().replace(/[._-]+/g,' ').replace(/\s+/g,' ')}
+function findHeaderIndex(headers,candidates){
+ const hs=headers.map(normHeader);
+ for(const cand of candidates){const i=hs.indexOf(cand);if(i>=0)return i}
+ for(let i=0;i<hs.length;i++){if(candidates.some(c=>hs[i].includes(c)))return i}
+ return -1;
+}
+async function importLearnersExcel(ev){
+ const file=ev.target.files?.[0]; if(!file)return;
+ try{
+   if(typeof XLSX==='undefined')throw new Error('Excel reader not loaded');
+   const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+   const ws=wb.Sheets[wb.SheetNames[0]];
+   const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+   const nameCandidates=['learner name','learners name','name of learner','student name','full name','name'];
+   const firstCandidates=['first name','firstname','given name'];
+   const middleCandidates=['middle name','middlename'];
+   const lastCandidates=['last name','lastname','surname'];
+   const sectionCandidates=['grade & section','grade and section','grade level & section','grade level and section','grade/section','section'];
+   const gradeCandidates=['grade level','grade'];
+   const idCandidates=['lrn','student id','learner id','id no','id number','id'];
+   let headerRow=-1;
+   for(let r=0;r<Math.min(rows.length,25);r++){
+     const hs=rows[r];
+     if(findHeaderIndex(hs,nameCandidates)>=0 || (findHeaderIndex(hs,firstCandidates)>=0 && findHeaderIndex(hs,lastCandidates)>=0)){headerRow=r;break}
+   }
+   if(headerRow<0)throw new Error('Could not find a learner-name header in the first 25 rows.');
+   const headers=rows[headerRow];
+   const nameI=findHeaderIndex(headers,nameCandidates);
+   const firstI=findHeaderIndex(headers,firstCandidates), middleI=findHeaderIndex(headers,middleCandidates), lastI=findHeaderIndex(headers,lastCandidates);
+   const secI=findHeaderIndex(headers,sectionCandidates), gradeI=findHeaderIndex(headers,gradeCandidates), idI=findHeaderIndex(headers,idCandidates);
+   const imported=[];
+   for(let r=headerRow+1;r<rows.length;r++){
+     const row=rows[r];
+     let name='';
+     if(nameI>=0)name=String(row[nameI]??'').trim();
+     else name=[firstI>=0?row[firstI]:'',middleI>=0?row[middleI]:'',lastI>=0?row[lastI]:''].map(x=>String(x??'').trim()).filter(Boolean).join(' ');
+     if(!name)continue;
+     let section=secI>=0?String(row[secI]??'').trim():'';
+     const grade=gradeI>=0?String(row[gradeI]??'').trim():'';
+     if(grade && section && !section.toLowerCase().includes(grade.toLowerCase()))section=grade+' - '+section;
+     else if(grade && !section)section=grade;
+     const id=idI>=0?String(row[idI]??'').trim():'';
+     imported.push({name,section,id});
+   }
+   if(!imported.length)throw new Error('No learner rows found.');
+   state.learners=imported; state.mode='personalized';
+   document.querySelector('input[name=mode][value=personalized]').checked=true;
+   learnerList.value=imported.map(x=>x.name+' | '+(x.section||'')+' | '+(x.id||'')).join('\n');
+   syncStudentOptions(); saveDraft();
+   importStatus.innerHTML='<b>'+imported.length+' learners imported</b> from '+esc(file.name)+'.';
+   if(state.step===5){buildPreviewLearners();renderPreview()}
+ }catch(err){
+   importStatus.innerHTML='<span style="color:#a33"><b>Import failed:</b> '+esc(err.message||String(err))+'</span>';
+ }finally{ev.target.value=''}
+}
+
 function go(dir){
  if(state.step===1&&dir>0&&!sheetName.value.trim()){sheetName.focus();alert('Please enter an Answer Sheet Name first.');return}
  collect();let n=Math.max(1,Math.min(5,state.step+dir));showStep(n);
@@ -266,9 +357,7 @@ function autoFitClass(text,kind){
  if(n<=44)return 'size-md';
  return 'size-sm';
 }
-function renderPreview(){
- collect();
- const idx=previewLearner.value;const learner=idx!==''&&state.learners[Number(idx)]?state.learners[Number(idx)]:null;
+function buildPaperHTML(learner){
  const enabledHeaders=state.headers.filter(h=>h.enabled);
  const byUsage=u=>enabledHeaders.find(h=>h.usage===u);
  const nameH=byUsage('Name');
@@ -283,7 +372,7 @@ function renderPreview(){
  const scoreBox=scoreH?`<div class="infoBox scoreBox"><b>${esc(scoreH.label||'Score')}</b><div class="scoreLine"></div></div>`:'';
  const assessBox=assessH?`<div class="infoBox" style="display:flex;align-items:center;justify-content:center;text-align:center;font-size:10pt;font-weight:800">${esc(assessH.label||'Quiz 1')}</div>`:'';
  let extraHtml=extras.map(h=>`<div class="infoBox" style="grid-column:span ${widthSpan(h.width)}"><b>${esc(h.label||h.usage)}</b></div>`).join('');
- if(state.includeId)extraHtml+=`<div class="infoBox" style="grid-column:span 4"><b>${esc(state.idLabel)}</b></div>`;
+ if(state.includeId)extraHtml+=`<div class="infoBox" style="grid-column:span 4"><b>${esc(state.idLabel)}</b><div class="studentValue size-md">${esc(learner?.id||'')}</div></div>`;
 
  const info=`<div class="studentHeader"><div class="studentLeft">${nameBox}${gradeBox}</div><div class="studentRight">${scoreBox}${assessBox}</div></div>${extraHtml?`<div class="extraInfoGrid">${extraHtml}</div>`:''}`;
 
@@ -302,7 +391,7 @@ function renderPreview(){
      const splitAt=Math.ceil(g.items.length/2);
      chunks=[g.items.slice(0,splitAt),g.items.slice(splitAt)];
    }
-   chunks.forEach((items,chunkIndex)=>{
+   chunks.forEach(items=>{
      let rows=items.map(n=>`<div class="mcqRow"><b>${n}.</b>${labels.map(x=>`<span class="bubble">${esc(x)}</span>`).join('')}</div>`).join('');
      let range=items.length?`<span class="tiny">• Items ${items[0]}–${items[items.length-1]}</span>`:'';
      sectionParts.push(`<section class="answerSec"><h4>${g.type==='tf'?'TRUE / FALSE':'MULTIPLE CHOICE'} ${range}</h4><div class="body">${rows}</div></section>`);
@@ -315,14 +404,60 @@ function renderPreview(){
   }
  });
  const sections=sectionParts.join('');
- paperHost.innerHTML=`<div class="paper">
+ return `<div class="paper">
  <span class="corner c1"></span><span class="corner c2"></span><span class="corner c3"></span><span class="corner c4"></span>
  <div class="pHead"><h1>SMART SCANNER</h1><p>${esc(state.name||'ANSWER SHEET')} • ${state.questions.length} ITEMS</p></div>
  ${info}
  <div class="answerSections">${sections||'<div class="empty">No questions added yet.</div>'}</div>
  <div class="footer">SMART Scanner • Answer Sheet Builder</div></div>`;
+}
+function renderPreview(){
+ collect();
+ const idx=previewLearner.value;
+ const learner=idx!==''&&state.learners[Number(idx)]?state.learners[Number(idx)]:null;
+ paperHost.innerHTML=buildPaperHTML(learner);
  scalePaper();
 }
+
+function preparePrint(items,perPage){
+ const pages=[];
+ for(let i=0;i<items.length;i+=perPage)pages.push(items.slice(i,i+perPage));
+ const cls=perPage===1?'one':perPage===2?'two':'four';
+ printArea.innerHTML=pages.map(page=>{
+   const slots=Array.from({length:perPage},(_,j)=>{
+     const learner=page[j];
+     return learner===undefined?'<div class="printSlot empty"></div>':`<div class="printSlot">${buildPaperHTML(learner)}</div>`;
+   }).join('');
+   return `<div class="printPage ${cls}">${slots}</div>`;
+ }).join('');
+ document.body.classList.add('print-batch');
+ let style=document.getElementById('dynamicPrintPage');
+ if(!style){style=document.createElement('style');style.id='dynamicPrintPage';document.head.appendChild(style)}
+ style.textContent=perPage===2?'@media print{@page{size:A4 landscape;margin:0}}':'@media print{@page{size:A4 portrait;margin:0}}';
+}
+function cleanupPrint(){
+ document.body.classList.remove('print-batch');
+ printArea.innerHTML='';
+ const s=document.getElementById('dynamicPrintPage');if(s)s.remove();
+}
+function printCurrent(){
+ collect();
+ const idx=previewLearner.value;
+ const learner=idx!==''&&state.learners[Number(idx)]?state.learners[Number(idx)]:null;
+ const perPage=Number(printLayout.value||1);
+ if(perPage===4 && state.questions.length>25 && !confirm('4-up A6 will be very small for more than 25 items. Continue anyway?'))return;
+ preparePrint([learner],perPage);
+ setTimeout(()=>window.print(),50);
+}
+function printAllLearners(){
+ collect();
+ const perPage=Number(printLayout.value||1);
+ let items=(state.mode==='personalized'&&state.learners.length)?state.learners:[null];
+ if(perPage===4 && state.questions.length>25 && !confirm('4-up A6 will be very small for more than 25 items. Continue anyway?'))return;
+ preparePrint(items,perPage);
+ setTimeout(()=>window.print(),50);
+}
+window.addEventListener('afterprint',cleanupPrint);
 
 function safeFileName(){
  const base=(state.name||'smart-scanner-answer-sheet').trim().replace(/[^a-z0-9\-_]+/gi,'_').replace(/^_+|_+$/g,'');
