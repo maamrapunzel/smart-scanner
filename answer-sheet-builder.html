@@ -64,7 +64,7 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}.field,sele
 <thead><tr><th>Usage</th><th class="center">Enabled?</th><th>Displayed Label on Answer Sheet</th><th>Width</th></tr></thead>
 <tbody id="headerRows"></tbody>
 </table>
-<div class="help">Choose the assessment label as Quiz, Summative, or Exam. In the printed sheet, Grade & Section is automatically placed below Name, while Score appears at the upper right.</div>
+<div class="help">Type the assessment title exactly as you want it printed, such as Quiz 1, Summative 2, or Term Exam. Grade & Section is automatically placed below Name, while Score appears at the upper right.</div>
 </div>
 
 <div id="step3" class="stepPane hidden">
@@ -146,7 +146,7 @@ const state={
  name:'',
  headers:[
   {usage:'Name',enabled:true,label:'Name',width:'Large'},
-  {usage:'Assessment',enabled:true,label:'Quiz',width:'Medium'},
+  {usage:'Assessment Title',enabled:true,label:'Quiz 1',width:'Medium'},
   {usage:'Grade & Section',enabled:true,label:'Grade & Section',width:'Medium'},
   {usage:'Other 1',enabled:false,label:'Score',width:'Medium'},
   {usage:'Other 2',enabled:false,label:'',width:'Medium'},
@@ -175,7 +175,7 @@ function collect(){
  saveDraft();
 }
 function saveDraft(){try{localStorage.setItem('smartScannerAnswerSheetDraft',JSON.stringify(state))}catch(e){}}
-function loadDraft(){try{const x=JSON.parse(localStorage.getItem('smartScannerAnswerSheetDraft'));if(x&&x.headers&&x.questions){x.headers=x.headers.map(h=>h.usage==='Quiz'?{...h,usage:'Assessment',label:['Quiz','Summative','Exam'].includes(h.label)?h.label:'Quiz'}:h.usage==='Class'?{...h,usage:'Grade & Section',label:'Grade & Section'}:h);Object.assign(state,x)}}catch(e){}}
+function loadDraft(){try{const x=JSON.parse(localStorage.getItem('smartScannerAnswerSheetDraft'));if(x&&x.headers&&x.questions){x.headers=x.headers.map(h=>h.usage==='Quiz'?{...h,usage:'Assessment Title',label:'Quiz 1'}:h.usage==='Assessment'?{...h,usage:'Assessment Title',label:(h.label||'Quiz')==='Quiz'?'Quiz 1':(h.label||'Quiz')==='Summative'?'Summative 1':(h.label||'Quiz')==='Exam'?'Term Exam':h.label}:h.usage==='Class'?{...h,usage:'Grade & Section',label:'Grade & Section'}:h);Object.assign(state,x)}}catch(e){}}
 function init(){
  loadDraft(); sheetName.value=state.name||''; renderHeaderRows();
  document.querySelectorAll('input[name=mode]').forEach(r=>r.checked=r.value===state.mode);
@@ -184,7 +184,7 @@ function init(){
  syncStudentOptions();renderQuestions();showStep(1);
 }
 function renderHeaderRows(){
- headerRows.innerHTML=state.headers.map((h,i)=>{const labelControl=h.usage==='Assessment'?`<select class="h-label"><option ${h.label==='Quiz'?'selected':''}>Quiz</option><option ${h.label==='Summative'?'selected':''}>Summative</option><option ${h.label==='Exam'?'selected':''}>Exam</option></select>`:`<input class="h-label" type="text" value="${esc(h.label)}">`;return `<tr><td><b>${esc(h.usage)}</b></td><td class="center"><input class="check h-enabled" type="checkbox" ${h.enabled?'checked':''}></td><td>${labelControl}</td><td><select class="h-width"><option ${h.width==='Small'?'selected':''}>Small</option><option ${h.width==='Medium'?'selected':''}>Medium</option><option ${h.width==='Large'?'selected':''}>Large</option></select></td></tr>`}).join('');
+ headerRows.innerHTML=state.headers.map((h,i)=>`<tr><td><b>${esc(h.usage)}</b></td><td class="center"><input class="check h-enabled" type="checkbox" ${h.enabled?'checked':''}></td><td><input class="h-label" type="text" value="${esc(h.label)}" ${h.usage==='Assessment Title'?'placeholder="e.g. Quiz 1, Summative 2, Term Exam"':''}></td><td><select class="h-width"><option ${h.width==='Small'?'selected':''}>Small</option><option ${h.width==='Medium'?'selected':''}>Medium</option><option ${h.width==='Large'?'selected':''}>Large</option></select></td></tr>`).join('');
 }
 function syncStudentOptions(){
  idOptions.classList.toggle('hidden',!includeId.checked);
@@ -256,14 +256,14 @@ function renderPreview(){
  const byUsage=u=>enabledHeaders.find(h=>h.usage===u);
  const nameH=byUsage('Name');
  const gradeH=byUsage('Grade & Section');
- const assessH=byUsage('Assessment');
+ const assessH=byUsage('Assessment Title');
  const scoreH=state.headers.find(h=>h.usage==='Other 1' && h.enabled);
- const extras=enabledHeaders.filter(h=>!['Name','Grade & Section','Assessment','Other 1'].includes(h.usage));
+ const extras=enabledHeaders.filter(h=>!['Name','Grade & Section','Assessment Title','Other 1'].includes(h.usage));
 
  const nameBox=nameH?`<div class="infoBox"><b>${esc(nameH.label||'Name')}</b>${esc(learner?learner.name:'')}</div>`:'';
  const gradeBox=gradeH?`<div class="infoBox"><b>${esc(gradeH.label||'Grade & Section')}</b>${esc(learner?learner.section:'')}</div>`:'';
  const scoreBox=scoreH?`<div class="infoBox scoreBox"><b>${esc(scoreH.label||'Score')}</b><div class="scoreLine"></div></div>`:'';
- const assessBox=assessH?`<div class="infoBox"><b>Assessment</b><div>${esc(assessH.label||'Quiz')}</div></div>`:'';
+ const assessBox=assessH?`<div class="infoBox" style="display:flex;align-items:center;justify-content:center;text-align:center;font-size:10pt;font-weight:800">${esc(assessH.label||'Quiz 1')}</div>`:'';
  let extraHtml=extras.map(h=>`<div class="infoBox" style="grid-column:span ${widthSpan(h.width)}"><b>${esc(h.label||h.usage)}</b></div>`).join('');
  if(state.includeId)extraHtml+=`<div class="infoBox" style="grid-column:span 4"><b>${esc(state.idLabel)}</b></div>`;
 
