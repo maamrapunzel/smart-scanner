@@ -25,7 +25,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 </style>
 </head>
 <body>
-<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V4.1 • FAST LIVE SCAN</span></header>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V4.2 • LIVE SCAN NOW</span></header>
 
 <main class="wrap">
  <div class="hero">
@@ -60,6 +60,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
    <input id="galleryInput" type="file" accept="image/*">
    <div class="actions">
     <button id="startScanBtn" class="btn primary" onclick="openCamera()">▣ Start Scanner</button>
+    <button id="scanNowBtn" class="btn green hidden" onclick="scanLiveNow()">✓ Scan Now</button>
     <button id="stopScanBtn" class="btn light hidden" onclick="stopLiveScanner(true)">■ Stop Scanner</button>
     <button class="btn dark" onclick="openGallery()">🖼 Choose Photo</button>
    </div>
@@ -113,7 +114,7 @@ let mediaStream=null,liveTimer=null,liveBusy=false,stableFrames=0,lastLivePts=nu
 
 const cameraInput=document.getElementById('cameraInput'),galleryInput=document.getElementById('galleryInput');
 const liveVideo=document.getElementById('liveVideo'),liveBadge=document.getElementById('liveBadge');
-const startScanBtn=document.getElementById('startScanBtn'),stopScanBtn=document.getElementById('stopScanBtn');
+const startScanBtn=document.getElementById('startScanBtn'),scanNowBtn=document.getElementById('scanNowBtn'),stopScanBtn=document.getElementById('stopScanBtn');
 cameraInput.addEventListener('change',photoSelected);galleryInput.addEventListener('change',photoSelected);
 document.getElementById('layoutFrame').addEventListener('load',()=>{layoutReady=true;activateBuilderPrintCss();refreshLayoutMap();});
 
@@ -224,7 +225,7 @@ async function openCamera(){
    await liveVideo.play();
    liveVideo.style.display='block';photoPreview.style.display='none';photoPlaceholder.style.display='none';
    liveBadge.style.display='block';liveBadge.className='liveBadge warn';liveBadge.textContent='Looking for 4 black blocks…';
-   startScanBtn.classList.add('hidden');stopScanBtn.classList.remove('hidden');
+   startScanBtn.classList.add('hidden');scanNowBtn.classList.remove('hidden');stopScanBtn.classList.remove('hidden');
    setScanStatus('Live scanner active. Show the whole sheet and all 4 black blocks.','warn');
    scheduleLiveAnalysis(300);
  }catch(e){
@@ -237,7 +238,7 @@ function stopLiveScanner(showMessage){
  liveBusy=false;stableFrames=0;lastLivePts=null;autoCaptureLocked=false;
  if(mediaStream){mediaStream.getTracks().forEach(function(t){t.stop()});mediaStream=null}
  liveVideo.pause();liveVideo.srcObject=null;liveVideo.style.display='none';liveBadge.style.display='none';
- startScanBtn.classList.remove('hidden');stopScanBtn.classList.add('hidden');
+ startScanBtn.classList.remove('hidden');scanNowBtn.classList.add('hidden');stopScanBtn.classList.add('hidden');
  if(photoPreview.style.display!=='block')photoPlaceholder.style.display='flex';
  if(showMessage)setScanStatus('Scanner stopped. Tap Start Scanner when ready.','warn');
 }
@@ -260,7 +261,7 @@ async function analyzeLiveFrame(){
  if(!mediaStream||liveBusy||autoCaptureLocked)return;
  liveBusy=true;
  try{
-   var imageData=imageToImageData(liveVideo,720);
+   var imageData=imageToImageData(liveVideo,900);
    var pts=findFourMarkers(imageData);
    stableFrames=markersClose(pts,lastLivePts,imageData)?stableFrames+1:1;
    lastLivePts=pts;
@@ -287,7 +288,24 @@ function stopCameraTracks(){
  if(mediaStream){mediaStream.getTracks().forEach(function(t){t.stop()});mediaStream=null}
  liveBusy=false;
  liveVideo.pause();liveVideo.srcObject=null;liveVideo.style.display='none';liveBadge.style.display='none';
- startScanBtn.classList.remove('hidden');stopScanBtn.classList.add('hidden');
+ startScanBtn.classList.remove('hidden');scanNowBtn.classList.add('hidden');stopScanBtn.classList.add('hidden');
+}
+async function scanLiveNow(){
+ if(!mediaStream||liveBusy||autoCaptureLocked){return}
+ liveBusy=true;autoCaptureLocked=true;
+ try{
+   setScanStatus('Scanning current live frame…','warn');
+   const imageData=imageToImageData(liveVideo,1500);
+   const pts=findFourMarkers(imageData);
+   showImageDataPreview(imageData);
+   stopCameraTracks();
+   await processImageData(imageData,pts,'Live scan');
+ }catch(e){
+   console.error(e);
+   autoCaptureLocked=false;liveBusy=false;
+   setScanStatus('Could not read the 4 corner blocks yet. Keep the whole sheet visible and tap Scan Now again.','bad');
+   if(mediaStream)scheduleLiveAnalysis(450);
+ }
 }
 async function processImageData(imageData,pts,label){
  try{
@@ -346,12 +364,12 @@ function showImageDataPreview(img){
 function findFourMarkers(img){
  const w=img.width,h=img.height;
  const regions={
-   tl:[Math.round(w*.01),Math.round(w*.34),Math.round(h*.01),Math.round(h*.28)],
-   tr:[Math.round(w*.66),Math.round(w*.99),Math.round(h*.01),Math.round(h*.28)],
-   bl:[Math.round(w*.01),Math.round(w*.34),Math.round(h*.72),Math.round(h*.99)],
-   br:[Math.round(w*.66),Math.round(w*.99),Math.round(h*.72),Math.round(h*.99)]
+   tl:[Math.round(w*.005),Math.round(w*.42),Math.round(h*.005),Math.round(h*.36)],
+   tr:[Math.round(w*.58),Math.round(w*.995),Math.round(h*.005),Math.round(h*.36)],
+   bl:[Math.round(w*.005),Math.round(w*.42),Math.round(h*.64),Math.round(h*.995)],
+   br:[Math.round(w*.58),Math.round(w*.995),Math.round(h*.64),Math.round(h*.995)]
  };
- const scales=[.014,.018,.022,.027,.033,.040].map(v=>Math.max(10,Math.round(w*v)));
+ const scales=[.008,.011,.014,.018,.023,.030,.038].map(v=>Math.max(5,Math.round(w*v)));
  const pick=reg=>findBestCornerMarker(img,...reg,scales);
  const pts={tl:pick(regions.tl),tr:pick(regions.tr),bl:pick(regions.bl),br:pick(regions.br)};
  if(!pts.tl||!pts.tr||!pts.bl||!pts.br){
@@ -360,7 +378,7 @@ function findFourMarkers(img){
  const top=dist(pts.tl,pts.tr),bottom=dist(pts.bl,pts.br),left=dist(pts.tl,pts.bl),right=dist(pts.tr,pts.br);
  const widthAvg=(top+bottom)/2,heightAvg=(left+right)/2,ratio=heightAvg/widthAvg;
  const topSkew=Math.abs(top-bottom)/Math.max(top,bottom),sideSkew=Math.abs(left-right)/Math.max(left,right);
- if(widthAvg<w*.42||heightAvg<h*.48)throw new Error('The detected corner blocks are too close together. Keep the full sheet larger in the photo.');
+ if(widthAvg<w*.30||heightAvg<h*.38)throw new Error('The detected corner blocks are too close together. Keep the full sheet visible and move slightly closer.');
  if(ratio<1.15||ratio>1.80||topSkew>.32||sideSkew>.32){
    throw new Error('The detected black blocks do not match the answer-sheet corners. Retake the photo with all four corners visible and less extreme tilt.');
  }
@@ -405,14 +423,14 @@ function findMarkerOnWhite(img,x0,x1,y0,y1,win){
      const inn=sum(cx-ih,cy-ih,cx-ih+win,cy-ih+win);
      const out=sum(cx-oh,cy-oh,cx-oh+outer,cy-oh+outer);
      const inner=inn.sum/inn.area;
-     if(inner<.52)continue;
+     if(inner<.44)continue;
      const ring=Math.max(0,out.sum-inn.sum)/Math.max(1,out.area-inn.area);
      const contrast=inner-ring;
      const score=inner*1.10-ring*.78+contrast*.50;
      if(!best||score>best.score)best={x:cx,y:cy,score:score,win:win};
    }
  }
- return best&&best.score>.42?best:null;
+ return best&&best.score>.32?best:null;
 }
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
 function warpPage(src,pts,W,H){
