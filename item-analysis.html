@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SMART Scanner — Item Analysis</title>
+<style>
+:root{--ink:#252126;--muted:#756d74;--line:#e3dce1;--bg:#f6f3f5;--panel:#fff;--pink:#eb4f90;--pink2:#fff1f7;--dark:#1e1a1d;--green:#228e62;--blue:#3d8ed8;--amber:#b87911;--red:#b43a3a}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+button,input,select{font:inherit}.topbar{height:62px;background:var(--dark);color:#fff;display:flex;align-items:center;padding:0 18px;gap:12px;position:sticky;top:0;z-index:20}
+.logo{width:38px;height:38px;border-radius:10px;background:var(--pink);display:grid;place-items:center;font-weight:900}.brand b{display:block}.brand small{color:#cfc7cc}.spacer{flex:1}.pill{border:1px solid #ffffff35;border-radius:999px;padding:6px 10px;font-size:11px}
+.wrap{max-width:1250px;margin:22px auto;padding:0 16px 50px}.hero{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;margin-bottom:16px}.hero h1{margin:0 0 6px;font-size:25px}.hero p{margin:0;color:var(--muted);line-height:1.45}
+.btn{border:0;border-radius:10px;padding:10px 15px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}.btn.primary{background:var(--pink);color:#fff}.btn.light{background:#eee8ec;color:#3b3338}.btn.blue{background:var(--blue);color:#fff}.btn.green{background:var(--green);color:#fff}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px #6a48550d;margin-bottom:16px;overflow:hidden}.cardHead{padding:14px 17px;border-bottom:1px solid var(--line);background:#fcfafb;display:flex;align-items:center;gap:10px}.cardHead h2{margin:0;font-size:17px}.cardBody{padding:17px}
+.grid3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;align-items:end}.metrics{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.metric{border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;background:#fcfafb}.metric b{display:block;font-size:22px}.metric small{color:var(--muted);font-size:11px}
+label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}.field,select{width:100%;border:1px solid #d9d0d5;border-radius:10px;padding:10px 11px;background:#fff}.help{font-size:12px;color:var(--muted);line-height:1.45;margin-top:6px}
+.status{border:1px solid var(--line);background:#fcfafb;border-radius:11px;padding:11px 12px;font-size:12px;line-height:1.45}.status.ok{border-color:#a9dcc9;background:#f1fff9;color:#176448}.status.warn{border-color:#efd8a7;background:#fff9e8;color:#795815}.status.bad{border-color:#efc1c1;background:#fff4f4;color:#8b3131}
+.tableWrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{width:100%;border-collapse:collapse;min-width:1050px}th,td{padding:9px 10px;border-bottom:1px solid #eee8eb;text-align:left;font-size:12px;vertical-align:top}th{background:#f7f2f5;font-size:11px;text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0;z-index:1}td.num,th.num{text-align:center}.key{font-family:ui-monospace,Consolas,monospace;font-size:11px}.badge{display:inline-block;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:800}.good{background:#e9f8f1;color:#176448}.mid{background:#fff4d9;color:#795815}.low{background:#ffeaea;color:#8b3131}.muted{color:var(--muted)}.empty{padding:22px;text-align:center;color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.sectionSummary{display:flex;gap:12px;flex-wrap:wrap}.sectionSummary span{font-size:12px;color:var(--muted)}
+@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}.grid3,.hero{grid-template-columns:1fr}.hero .actions{justify-content:flex-start}}
+@media print{
+ body{background:#fff}.topbar,.hero .actions,.controls,.noPrint{display:none!important}.wrap{max-width:none;margin:0;padding:0}.card{box-shadow:none;border:0;border-radius:0}.cardHead{background:#fff;padding-left:0}.cardBody{padding:8px 0}.tableWrap{overflow:visible;border:0}table{min-width:0}th{position:static}.metrics{grid-template-columns:repeat(7,1fr)}.metric{padding:6px}.metric b{font-size:16px}
+}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Item Analysis</small></div><div class="spacer"></div><span class="pill">ITEM ANALYSIS V1</span></header>
+
+<main class="wrap">
+ <div class="hero">
+  <div><h1>Item Analysis</h1><p>Uses saved scan results from SMART Scanner. View class performance and identify which items need reteaching or review.</p></div>
+  <div class="actions"><a class="btn light" href="./scanner.html">← Scanner</a><button class="btn blue" onclick="window.print()">Print Report</button><button class="btn green" onclick="exportCSV()">Export CSV</button></div>
+ </div>
+
+ <section class="card controls">
+  <div class="cardHead"><h2>1. Select Assessment</h2></div>
+  <div class="cardBody">
+   <div class="grid3">
+    <div><label>Answer Key / Assessment</label><select id="keySelect" onchange="renderAll()"></select></div>
+    <div><label>Passing Target (%)</label><input id="passTarget" class="field" type="number" min="0" max="100" step="1" value="75" oninput="renderAll()"></div>
+    <div><label>Mastery Cutoff (%)</label><input id="masteryCutoff" class="field" type="number" min="1" max="100" step="1" value="75" oninput="renderAll()"></div>
+   </div>
+   <div class="help">Passing Target is used only for Passed/Failed summary. Mastery Cutoff is used for item interpretation and can be changed anytime.</div>
+  </div>
+ </section>
+
+ <section class="card">
+  <div class="cardHead"><h2>2. Class Summary</h2></div>
+  <div class="cardBody">
+   <div id="summaryStatus" class="status" style="margin-bottom:12px"></div>
+   <div class="metrics">
+    <div class="metric"><b id="mScanned">0</b><small>Scanned</small></div>
+    <div class="metric"><b id="mMean">0</b><small>Mean Score</small></div>
+    <div class="metric"><b id="mMps">0%</b><small>MPS</small></div>
+    <div class="metric"><b id="mHigh">0</b><small>Highest</small></div>
+    <div class="metric"><b id="mLow">0</b><small>Lowest</small></div>
+    <div class="metric"><b id="mPassed">0</b><small>Passed</small></div>
+    <div class="metric"><b id="mRate">0%</b><small>Passing Rate</small></div>
+   </div>
+  </div>
+ </section>
+
+ <section class="card">
+  <div class="cardHead"><h2>3. Per-Item Analysis</h2><div class="spacer"></div><div id="itemSummary" class="sectionSummary"></div></div>
+  <div class="cardBody">
+   <div class="tableWrap">
+    <table>
+     <thead><tr><th class="num">Item</th><th>Type</th><th>Key</th><th>Response Counts</th><th class="num">Blank</th><th class="num">Correct</th><th class="num">Wrong</th><th class="num">% Correct</th><th>Interpretation</th><th>Suggested Action</th></tr></thead>
+     <tbody id="analysisRows"></tbody>
+    </table>
+   </div>
+  </div>
+ </section>
+</main>
+
+<script>
+const KEY_REG='smartScannerAnswerKeys',CURRENT_KEY='smartScannerCurrentAnswerKey',SCAN_REG='smartScannerScans';
+let currentAnalysis=[];
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function parse(s,f){try{return JSON.parse(s)}catch(e){return f}}
+function keys(){const a=parse(localStorage.getItem(KEY_REG),[]);return Array.isArray(a)?a:[]}
+function scans(){const a=parse(localStorage.getItem(SCAN_REG),[]);return Array.isArray(a)?a:[]}
+function norm(s){return String(s??'').trim().toLowerCase().replace(/[−–—]/g,'-').replace(/\s+/g,' ')}
+function compact(s){return norm(s).replace(/\s+/g,'')}
+function accepts(student,key,kind='text'){const opts=String(key??'').split('|').map(x=>kind==='coord'?compact(x):norm(x)).filter(Boolean),s=kind==='coord'?compact(student):norm(student);return !!s&&opts.includes(s)}
+function typeName(e){return e.type==='mcq'?'Multiple Choice':e.type==='tf'?'True / False':e.type==='groupmcq'?'Grouped MCQ':e.type==='coord'?'Ordered Pair + Location':e.type==='num'?'Numerical':e.type==='short'?'Short Answer':'Word / Text'}
+function keyText(e){
+ if(e.type==='coord')return (e.orderedPair||'')+' | '+(e.location||'');
+ if(e.type==='num'&&e.entryMode==='value')return (e.values||[]).join(' | ');
+ return e.answer||'';
+}
+function responseText(r,e){
+ if(!r)return '';
+ if(e.type==='coord')return [r.answer?.orderedPair||'',r.answer?.location||''].filter(Boolean).join(' | ');
+ if(e.type==='num'&&e.entryMode==='value')return (r.answer?.values||[]).join(' | ');
+ if(r.manual)return r.answer?.text||'';
+ return r.answer||'';
+}
+function isBlank(r,e){
+ if(!r)return true;
+ if(e.type==='coord')return !String(r.answer?.orderedPair||'').trim()&&!String(r.answer?.location||'').trim();
+ if(e.type==='num'&&e.entryMode==='value')return !(r.answer?.values||[]).some(v=>String(v||'').trim());
+ if(r.manual)return !String(r.answer?.text||'').trim();
+ return !String(r.answer||'').trim();
+}
+function responseCorrect(r,e){
+ if(!r||r.uncertain)return false;
+ if(e.type==='coord')return accepts(r.answer?.orderedPair,e.orderedPair,'coord')&&accepts(r.answer?.location,e.location);
+ if(e.type==='num'&&e.entryMode==='value'){
+   const vals=r.answer?.values||[],ks=e.values||[];
+   return vals.length===ks.length&&ks.every((k,j)=>accepts(vals[j],k,'coord'));
+ }
+ const ans=r.manual?r.answer?.text:r.answer;return accepts(ans,e.answer);
+}
+function init(){
+ const ks=keys(),cur=parse(localStorage.getItem(CURRENT_KEY),null);
+ keySelect.innerHTML=ks.length?ks.map(k=>'<option value="'+esc(k.id)+'">'+esc(k.name||k.sourceSheetName||'Answer Key')+'</option>').join(''):'<option value="">No saved Answer Key</option>';
+ if(cur&&ks.some(k=>k.id===cur.id))keySelect.value=cur.id;
+ renderAll();
+}
+function selectedKey(){return keys().find(k=>k.id===keySelect.value)||null}
+function matchingScans(key){return scans().filter(s=>s.keyId===key.id)}
+function fmt(n,d=1){return Number.isFinite(n)?n.toFixed(d).replace(/\.0$/,''):'0'}
+function interpretation(p){
+ const m=Math.max(1,Math.min(100,Number(masteryCutoff.value||75)));
+ if(p>=m)return {label:'Mastered',cls:'good',action:'Maintain and enrich.'};
+ if(p>=50)return {label:'Approaching Mastery',cls:'mid',action:'Review item skill and give targeted practice.'};
+ return {label:'Needs Review',cls:'low',action:'Reteach the concept and check common misconceptions.'};
+}
+function renderAll(){
+ const key=selectedKey();
+ if(!key){summaryStatus.className='status bad';summaryStatus.textContent='No saved Answer Key available yet.';clearView();return}
+ const ss=matchingScans(key),totalPts=Number(key.totalPoints||key.entries.reduce((s,e)=>s+Number(e.points||0),0));
+ const pass=Math.max(0,Math.min(100,Number(passTarget.value||75)));
+ const scores=ss.map(s=>Number(s.score||0));
+ const mean=scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:0,mps=totalPts?mean/totalPts*100:0;
+ const high=scores.length?Math.max(...scores):0,low=scores.length?Math.min(...scores):0;
+ const passed=ss.filter(s=>Number(s.totalPoints||totalPts)>0&&(Number(s.score||0)/Number(s.totalPoints||totalPts)*100)>=pass).length;
+ mScanned.textContent=ss.length;mMean.textContent=fmt(mean,2)+' / '+fmt(totalPts,2);mMps.textContent=fmt(mps,1)+'%';mHigh.textContent=fmt(high,2);mLow.textContent=fmt(low,2);mPassed.textContent=passed;mRate.textContent=ss.length?fmt(passed/ss.length*100,1)+'%':'0%';
+ summaryStatus.className='status '+(ss.length?'ok':'warn');summaryStatus.textContent=ss.length?(key.name+' • '+ss.length+' saved scan result'+(ss.length===1?'':'s')+' included.'):'No saved scan results yet for '+key.name+'. The table below will populate after scan results are saved.';
+ buildItems(key,ss);
+}
+function clearView(){['mScanned','mMean','mMps','mHigh','mLow','mPassed','mRate'].forEach(id=>document.getElementById(id).textContent=id==='mMps'||id==='mRate'?'0%':'0');analysisRows.innerHTML='<tr><td colspan="10" class="empty">No data yet.</td></tr>';itemSummary.innerHTML='';currentAnalysis=[]}
+function buildItems(key,ss){
+ const rows=key.entries.map((e,i)=>{
+   let blank=0,correct=0,wrong=0;const counts={};
+   ss.forEach(s=>{
+     const r=(s.responses||[])[i],txt=responseText(r,e);
+     if(isBlank(r,e)){blank++;return}
+     counts[txt]=(counts[txt]||0)+1;
+     if(responseCorrect(r,e))correct++;else wrong++;
+   });
+   const pct=ss.length?correct/ss.length*100:0,interp=interpretation(pct);
+   return {item:e.display||e.id||String(i+1),type:typeName(e),key:keyText(e),counts,blank,correct,wrong,pct,interp};
+ });
+ currentAnalysis=rows;
+ const mastered=rows.filter(x=>x.interp.label==='Mastered').length,need=rows.filter(x=>x.interp.label==='Needs Review').length;
+ itemSummary.innerHTML='<span><b>'+mastered+'</b> mastered</span><span><b>'+need+'</b> need review</span><span><b>'+rows.length+'</b> answer entries</span>';
+ analysisRows.innerHTML=rows.length?rows.map(r=>{
+   const responseCounts=Object.entries(r.counts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'<span class="key">'+esc(k||'(blank)')+'</span>: '+v).join('<br>')||'<span class="muted">—</span>';
+   return '<tr><td class="num"><b>'+esc(r.item)+'</b></td><td>'+esc(r.type)+'</td><td class="key">'+esc(r.key||'—')+'</td><td>'+responseCounts+'</td><td class="num">'+r.blank+'</td><td class="num">'+r.correct+'</td><td class="num">'+r.wrong+'</td><td class="num"><b>'+fmt(r.pct,1)+'%</b></td><td><span class="badge '+r.interp.cls+'">'+esc(r.interp.label)+'</span></td><td>'+esc(r.interp.action)+'</td></tr>';
+ }).join(''):'<tr><td colspan="10" class="empty">No answer entries found.</td></tr>';
+}
+function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"'}
+function exportCSV(){
+ const key=selectedKey();if(!key||!currentAnalysis.length){alert('No item analysis to export yet.');return}
+ const rows=[['Item','Type','Key','Response Counts','Blank','Correct','Wrong','% Correct','Interpretation','Suggested Action']];
+ currentAnalysis.forEach(r=>rows.push([r.item,r.type,r.key,Object.entries(r.counts).map(([k,v])=>k+': '+v).join('; '),r.blank,r.correct,r.wrong,fmt(r.pct,1),r.interp.label,r.interp.action]));
+ const csv='\ufeff'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(key.name||'item-analysis').replace(/[^a-z0-9_-]+/gi,'_')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+init();
+</script>
+</body>
+</html>
