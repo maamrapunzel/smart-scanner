@@ -14,7 +14,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px #6a48550d;margin-bottom:16px;overflow:hidden}.cardHead{padding:14px 17px;border-bottom:1px solid var(--line);background:#fcfafb;display:flex;align-items:center;gap:10px}.cardHead h2{margin:0;font-size:17px}.cardBody{padding:17px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}label{display:block;font-size:12px;font-weight:800;margin:0 0 6px}.field,select,textarea{width:100%;border:1px solid #d9d0d5;border-radius:10px;padding:10px 11px;background:#fff}.help{font-size:12px;color:var(--muted);line-height:1.45;margin-top:6px}
 .status{border:1px solid var(--line);background:#fcfafb;border-radius:11px;padding:11px 12px;font-size:12px;line-height:1.45}.status.ok{border-color:#a9dcc9;background:#f1fff9;color:#176448}.status.warn{border-color:#efd8a7;background:#fff9e8;color:#795815}.status.bad{border-color:#efc1c1;background:#fff4f4;color:#8b3131}
-.photoFrame{width:min(100%,460px);aspect-ratio:210/297;margin:14px auto;background:#131313;border-radius:13px;overflow:hidden;position:relative;border:3px solid #e7d9df}.photoFrame img{width:100%;height:100%;object-fit:contain;display:none}.placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#aaa;padding:25px}.placeholder .icon{font-size:52px;margin-bottom:8px}.guideCorner{position:absolute;width:30px;height:30px;border:5px solid #fff;pointer-events:none}.guideCorner.tl{top:8px;left:8px;border-right:0;border-bottom:0}.guideCorner.tr{top:8px;right:8px;border-left:0;border-bottom:0}.guideCorner.bl{bottom:8px;left:8px;border-right:0;border-top:0}.guideCorner.br{bottom:8px;right:8px;border-left:0;border-top:0}
+.photoFrame{width:min(100%,460px);aspect-ratio:210/297;margin:14px auto;background:#131313;border-radius:13px;overflow:hidden;position:relative;border:3px solid #e7d9df}.photoFrame img,.photoFrame video{width:100%;height:100%;object-fit:contain;display:none}.liveBadge{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:6;background:#151215dd;color:#fff;border:1px solid #ffffff33;border-radius:999px;padding:7px 11px;font-size:11px;font-weight:800;white-space:nowrap;display:none}.liveBadge.ok{background:#176448e8}.liveBadge.warn{background:#795815e8}.placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#aaa;padding:25px}.placeholder .icon{font-size:52px;margin-bottom:8px}.guideCorner{position:absolute;width:30px;height:30px;border:5px solid #fff;pointer-events:none}.guideCorner.tl{top:8px;left:8px;border-right:0;border-bottom:0}.guideCorner.tr{top:8px;right:8px;border-left:0;border-bottom:0}.guideCorner.bl{bottom:8px;left:8px;border-right:0;border-top:0}.guideCorner.br{bottom:8px;right:8px;border-left:0;border-top:0}
 .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}.actions .btn{min-width:145px}#cameraInput,#galleryInput{display:none}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.metric{border:1px solid var(--line);border-radius:11px;padding:10px;text-align:center;background:#fcfafb}.metric b{display:block;font-size:19px;margin-bottom:2px}.metric small{color:var(--muted)}
 .reviewList{display:flex;flex-direction:column;gap:9px}.reviewItem{border:1px solid #ded6db;border-radius:12px;overflow:hidden;background:#fff}.reviewItem.problem{border-color:#dda64c;background:#fffaf0}.reviewTop{display:grid;grid-template-columns:58px 170px minmax(0,1fr);gap:10px;align-items:center;padding:9px 11px}.reviewNo{font-size:16px;font-weight:900}.typeTag{display:inline-block;border-radius:999px;background:#f0eaee;padding:5px 8px;font-size:10px;font-weight:800}.choiceRow{display:flex;gap:6px;flex-wrap:wrap}.choice{min-width:38px;height:34px;border:2px solid #bbb2b7;background:#fff;border-radius:18px;font-weight:900;cursor:pointer}.choice.selected{background:var(--pink);border-color:var(--pink);color:#fff}.choice.uncertain{box-shadow:0 0 0 3px #f3c46a55}
@@ -25,7 +25,7 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
 </style>
 </head>
 <body>
-<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V3 • CORNER LOCK</span></header>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V4 • LIVE SCAN</span></header>
 
 <main class="wrap">
  <div class="hero">
@@ -46,18 +46,21 @@ button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--d
  </section>
 
  <section class="card">
-  <div class="cardHead"><h2>2. Take or Choose Photo</h2></div>
+  <div class="cardHead"><h2>2. Live Scan</h2></div>
   <div class="cardBody">
-   <div class="help">Take a clear photo of one answer sheet. It does not have to be perfectly aligned—just keep the whole sheet and all four black registration blocks visible, with no heavy shadow across the answers.</div>
+   <div class="help">Tap <b>Start Scanner</b> and point the rear camera at the whole answer sheet. Keep all four black registration blocks visible. When the sheet is stable, SMART Scanner will capture automatically.</div>
    <div class="photoFrame">
+    <video id="liveVideo" playsinline autoplay muted></video>
     <img id="photoPreview">
+    <div id="liveBadge" class="liveBadge">Looking for 4 black blocks…</div>
     <div id="photoPlaceholder" class="placeholder"><div class="icon">📄</div><b>No answer sheet photo yet</b><div class="help" style="color:#aaa">Take a photo or choose one from the gallery.</div></div>
     <div class="guideCorner tl"></div><div class="guideCorner tr"></div><div class="guideCorner bl"></div><div class="guideCorner br"></div>
    </div>
    <input id="cameraInput" type="file" accept="image/*" capture="environment">
    <input id="galleryInput" type="file" accept="image/*">
    <div class="actions">
-    <button class="btn primary" onclick="openCamera()">📷 Take Photo</button>
+    <button id="startScanBtn" class="btn primary" onclick="openCamera()">▣ Start Scanner</button>
+    <button id="stopScanBtn" class="btn light hidden" onclick="stopLiveScanner(true)">■ Stop Scanner</button>
     <button class="btn dark" onclick="openGallery()">🖼 Choose Photo</button>
    </div>
    <div id="scanStatus" class="status" style="margin-top:12px">Ready when your Answer Key is loaded.</div>
