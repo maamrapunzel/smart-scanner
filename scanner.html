@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>SMART Scanner — Scan Papers</title>
+<style>
+:root{--ink:#252126;--muted:#756d74;--line:#e3dce1;--bg:#f6f3f5;--panel:#fff;--pink:#eb4f90;--pink2:#fff1f7;--dark:#1e1a1d;--blue:#3d8ed8;--green:#228e62;--amber:#b87911;--red:#b43a3a}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+button,input,select,textarea{font:inherit}.topbar{height:62px;background:var(--dark);color:#fff;display:flex;align-items:center;padding:0 18px;gap:12px;position:sticky;top:0;z-index:40}
+.logo{width:38px;height:38px;border-radius:10px;background:var(--pink);display:grid;place-items:center;font-weight:900}.brand b{display:block}.brand small{color:#cfc7cc}.spacer{flex:1}.pill{border:1px solid #ffffff35;border-radius:999px;padding:6px 10px;font-size:11px}
+.wrap{max-width:1120px;margin:22px auto;padding:0 16px 50px}.hero{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;margin-bottom:16px}.hero h1{margin:0 0 6px;font-size:25px}.hero p{margin:0;color:var(--muted);line-height:1.45}
+.btn{border:0;border-radius:10px;padding:10px 15px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}.btn.primary{background:var(--pink);color:#fff}.btn.dark{background:var(--dark);color:#fff}.btn.light{background:#eee8ec;color:#3b3338}.btn.green{background:var(--green);color:#fff}.btn.blue{background:var(--blue);color:#fff}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px #6a48550d;margin-bottom:16px;overflow:hidden}.cardHead{padding:14px 17px;border-bottom:1px solid var(--line);background:#fcfafb;display:flex;align-items:center;gap:10px}.cardHead h2{margin:0;font-size:17px}.cardBody{padding:17px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}label{display:block;font-size:12px;font-weight:800;margin:0 0 6px}.field,select,textarea{width:100%;border:1px solid #d9d0d5;border-radius:10px;padding:10px 11px;background:#fff}.help{font-size:12px;color:var(--muted);line-height:1.45;margin-top:6px}
+.status{border:1px solid var(--line);background:#fcfafb;border-radius:11px;padding:11px 12px;font-size:12px;line-height:1.45}.status.ok{border-color:#a9dcc9;background:#f1fff9;color:#176448}.status.warn{border-color:#efd8a7;background:#fff9e8;color:#795815}.status.bad{border-color:#efc1c1;background:#fff4f4;color:#8b3131}
+.photoFrame{width:min(100%,460px);aspect-ratio:210/297;margin:14px auto;background:#131313;border-radius:13px;overflow:hidden;position:relative;border:3px solid #e7d9df}.photoFrame img{width:100%;height:100%;object-fit:contain;display:none}.placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#aaa;padding:25px}.placeholder .icon{font-size:52px;margin-bottom:8px}.guideCorner{position:absolute;width:30px;height:30px;border:5px solid #fff;pointer-events:none}.guideCorner.tl{top:8px;left:8px;border-right:0;border-bottom:0}.guideCorner.tr{top:8px;right:8px;border-left:0;border-bottom:0}.guideCorner.bl{bottom:8px;left:8px;border-right:0;border-top:0}.guideCorner.br{bottom:8px;right:8px;border-left:0;border-top:0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}.actions .btn{min-width:145px}#cameraInput,#galleryInput{display:none}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.metric{border:1px solid var(--line);border-radius:11px;padding:10px;text-align:center;background:#fcfafb}.metric b{display:block;font-size:19px;margin-bottom:2px}.metric small{color:var(--muted)}
+.reviewList{display:flex;flex-direction:column;gap:9px}.reviewItem{border:1px solid #ded6db;border-radius:12px;overflow:hidden;background:#fff}.reviewItem.problem{border-color:#dda64c;background:#fffaf0}.reviewTop{display:grid;grid-template-columns:58px 170px minmax(0,1fr);gap:10px;align-items:center;padding:9px 11px}.reviewNo{font-size:16px;font-weight:900}.typeTag{display:inline-block;border-radius:999px;background:#f0eaee;padding:5px 8px;font-size:10px;font-weight:800}.choiceRow{display:flex;gap:6px;flex-wrap:wrap}.choice{min-width:38px;height:34px;border:2px solid #bbb2b7;background:#fff;border-radius:18px;font-weight:900;cursor:pointer}.choice.selected{background:var(--pink);border-color:var(--pink);color:#fff}.choice.uncertain{box-shadow:0 0 0 3px #f3c46a55}
+.handReview{display:grid;grid-template-columns:minmax(160px,260px) minmax(180px,1fr);gap:10px;align-items:center}.crop{width:100%;height:52px;object-fit:contain;border:1px solid #d7cfd3;border-radius:8px;background:#fff}.multiInputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:6px}.answerInput{width:100%;border:1px solid #d7cfd3;border-radius:8px;padding:8px}.correct{outline:2px solid #6cc69f}.wrong{outline:2px solid #e88e8e}.reviewNote{border-top:1px solid #eee8eb;background:#fcfafb;padding:6px 11px;font-size:10px;color:var(--muted)}
+.hidden{display:none!important}canvas{display:none}iframe#layoutFrame{position:absolute;left:-10000px;top:0;width:1400px;height:1900px;visibility:hidden;pointer-events:none;border:0}
+.saveBar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.saveBar .spacer{flex:1}
+@media(max-width:760px){.hero,.grid2,.grid3{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.reviewTop{grid-template-columns:48px 1fr}.reviewTop>.answerArea{grid-column:1/-1}.handReview{grid-template-columns:1fr}.actions .btn{flex:1;min-width:130px}}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Scan Papers</small></div><div class="spacer"></div><span class="pill">SCANNER-V1</span></header>
+
+<main class="wrap">
+ <div class="hero">
+  <div><h1>Scan Answer Sheet</h1><p>Bubble responses are read automatically. Handwritten boxes are cropped for quick review and confirmation before scoring.</p></div>
+  <a class="btn light" href="./answer-key-builder.html">← Answer Key</a>
+ </div>
+
+ <section class="card">
+  <div class="cardHead"><h2>1. Scan Setup</h2></div>
+  <div class="cardBody">
+   <div class="grid3">
+    <div><label>Answer Key</label><select id="keySelect" onchange="keyChanged()"></select></div>
+    <div><label>Printed Size</label><select id="paperLayout" onchange="layoutChanged()"><option value="1">A4 — 1 per page</option><option value="2">A5 — 2 per A4 page</option><option value="4">A6 — 4 per A4 page</option></select></div>
+    <div><label>Learner</label><select id="learnerSelect"></select><div class="help">For now, choose the learner manually. Automatic learner recognition can be added after we add a machine-readable learner code to the sheet.</div></div>
+   </div>
+   <div id="setupStatus" class="status" style="margin-top:12px">Loading Answer Key and layout…</div>
+  </div>
+ </section>
+
+ <section class="card">
+  <div class="cardHead"><h2>2. Take or Choose Photo</h2></div>
+  <div class="cardBody">
+   <div class="help">Take a clear portrait photo of one answer sheet only. Keep all four black corner squares visible and avoid strong shadows over the paper.</div>
+   <div class="photoFrame">
+    <img id="photoPreview">
+    <div id="photoPlaceholder" class="placeholder"><div class="icon">📄</div><b>No answer sheet photo yet</b><div class="help" style="color:#aaa">Take a photo or choose one from the gallery.</div></div>
+    <div class="guideCorner tl"></div><div class="guideCorner tr"></div><div class="guideCorner bl"></div><div class="guideCorner br"></div>
+   </div>
+   <input id="cameraInput" type="file" accept="image/*" capture="environment">
+   <input id="galleryInput" type="file" accept="image/*">
+   <div class="actions">
+    <button class="btn primary" onclick="openCamera()">📷 Take Photo</button>
+    <button class="btn dark" onclick="openGallery()">🖼 Choose Photo</button>
+   </div>
+   <div id="scanStatus" class="status" style="margin-top:12px">Ready when your Answer Key is loaded.</div>
+  </div>
+ </section>
+
+ <section id="reviewCard" class="card hidden">
+  <div class="cardHead"><h2>3. Review Scan</h2><div class="spacer"></div><span id="reviewProgress" class="help"></span></div>
+  <div class="cardBody">
+   <div class="metrics">
+    <div class="metric"><b id="scoreMetric">0</b><small>Score</small></div>
+    <div class="metric"><b id="autoMetric">0</b><small>Auto-read</small></div>
+    <div class="metric"><b id="manualMetric">0</b><small>Handwritten</small></div>
+    <div class="metric"><b id="warningMetric">0</b><small>Review</small></div>
+   </div>
+   <div class="status warn" style="margin-bottom:12px">Orange items need your attention. Handwritten answers are shown as image crops so you can type exactly what the learner wrote.</div>
+   <div id="reviewList" class="reviewList"></div>
+  </div>
+ </section>
+
+ <section id="saveCard" class="card hidden">
+  <div class="cardHead"><h2>4. Save Scan</h2></div>
+  <div class="cardBody">
+   <div class="saveBar">
+    <button class="btn light" onclick="rescan()">Rescan</button>
+    <div class="spacer"></div>
+    <button class="btn green" onclick="saveScan()">Save Result & Next</button>
+   </div>
+   <div id="saveStatus" class="status hidden" style="margin-top:12px"></div>
+  </div>
+ </section>
+</main>
+
+<canvas id="capture"></canvas>
+<canvas id="warp"></canvas>
+<iframe id="layoutFrame" src="./answer-sheet-builder.html"></iframe>
+
+<script>
+const KEY_REG='smartScannerAnswerKeys';
+const CURRENT_KEY='smartScannerCurrentAnswerKey';
+const SHEET_DRAFT='smartScannerAnswerSheetDraft';
+const SCAN_REG='smartScannerScans';
+const FRAME_W=900,FRAME_H=1312;
+let currentKey=null,currentMap=null,currentScan=null,warpedImage=null,layoutReady=false;
+
+const cameraInput=document.getElementById('cameraInput'),galleryInput=document.getElementById('galleryInput');
+cameraInput.addEventListener('change',photoSelected);galleryInput.addEventListener('change',photoSelected);
+document.getElementById('layoutFrame').addEventListener('load',()=>{layoutReady=true;activateBuilderPrintCss();refreshLayoutMap();});
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function safeParse(s,f){try{return JSON.parse(s)}catch(e){return f}}
+function registry(){const x=safeParse(localStorage.getItem(KEY_REG),[]);return Array.isArray(x)?x:[]}
+
+function init(){
+ const keys=registry();
+ const cur=safeParse(localStorage.getItem(CURRENT_KEY),null);
+ keySelect.innerHTML=keys.length?keys.map(k=>'<option value="'+esc(k.id)+'">'+esc(k.name||k.sourceSheetName||'Answer Key')+'</option>').join(''):'<option value="">No saved Answer Key</option>';
+ if(cur&&keys.some(k=>k.id===cur.id))keySelect.value=cur.id;
+ currentKey=keys.find(k=>k.id===keySelect.value)||cur||keys[0]||null;
+ loadLearners();
+ updateSetup();
+}
+function keyChanged(){currentKey=registry().find(k=>k.id===keySelect.value)||null;loadLearners();updateSetup();refreshLayoutMap()}
+function layoutChanged(){refreshLayoutMap();updateSetup()}
+function loadLearners(){
+ const sheet=safeParse(localStorage.getItem(SHEET_DRAFT),null);
+ const learners=sheet?.learners||[];
+ learnerSelect.innerHTML='<option value="">-- Select learner --</option>'+learners.map((l,i)=>'<option value="'+i+'">'+esc(l.name)+(l.section?' — '+esc(l.section):'')+'</option>').join('');
+}
+function updateSetup(){
+ if(!currentKey){setupStatus.className='status bad';setupStatus.textContent='No saved Answer Key found. Save an Answer Key first.';return}
+ setupStatus.className='status '+(currentMap?'ok':'warn');
+ setupStatus.textContent=(currentMap?'Ready to scan. ':'Preparing layout map… ')+(currentKey.name||'Answer Key')+' • '+currentKey.entries.length+' answer entries.';
+}
+function activateBuilderPrintCss(){
+ try{
+   const f=document.getElementById('layoutFrame'),doc=f.contentDocument;
+   if(doc.getElementById('scannerPrintCss'))return;
+   let css='';
+   for(const sheet of [...doc.styleSheets]){
+     let rules;try{rules=[...sheet.cssRules]}catch(e){continue}
+     for(const rule of rules){
+       if(rule instanceof f.contentWindow.CSSMediaRule && String(rule.conditionText).includes('print')){
+         for(const inner of [...rule.cssRules]){
+           if(inner.constructor.name!=='CSSPageRule')css+=inner.cssText+'\n';
+         }
+       }
+     }
+   }
+   const st=doc.createElement('style');st.id='scannerPrintCss';st.textContent=css;doc.head.appendChild(st);
+ }catch(e){console.warn('Could not activate print CSS',e)}
+}
+async function refreshLayoutMap(){
+ if(!layoutReady||!currentKey)return;
+ setupStatus.className='status warn';setupStatus.textContent='Preparing exact scan layout…';
+ try{
+   const f=document.getElementById('layoutFrame'),w=f.contentWindow,d=f.contentDocument;
+   activateBuilderPrintCss();
+   if(typeof w.cleanupPrint==='function')try{w.cleanupPrint()}catch(e){}
+   const per=Number(paperLayout.value||1);
+   if(typeof w.preparePrint!=='function')throw new Error('Answer Sheet layout engine is not ready.');
+   w.preparePrint([null],per);
+   await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+   const paper=d.querySelector('.printPage .printSlot:not(.empty) .paper');
+   if(!paper)throw new Error('Could not render the selected paper size.');
+   currentMap=measurePaperMap(paper,currentKey.entries);
+   if(typeof w.cleanupPrint==='function')w.cleanupPrint();
+   updateSetup();
+ }catch(e){
+   currentMap=null;setupStatus.className='status bad';setupStatus.textContent='Layout map failed: '+e.message;
+ }
+}
+function center(el){const r=el.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height}}
+function unionRect(els){
+ const rs=els.filter(Boolean).map(e=>e.getBoundingClientRect());if(!rs.length)return null;
+ const l=Math.min(...rs.map(r=>r.left)),t=Math.min(...rs.map(r=>r.top)),rr=Math.max(...rs.map(r=>r.right)),b=Math.max(...rs.map(r=>r.bottom));
+ return{left:l,top:t,right:rr,bottom:b,width:rr-l,height:b-t};
+}
+function measurePaperMap(paper,entries){
+ const tl=center(paper.querySelector('.c1')),tr=center(paper.querySelector('.c2')),bl=center(paper.querySelector('.c3'));
+ const dx=tr.x-tl.x,dy=bl.y-tl.y;if(dx<=0||dy<=0)throw new Error('Invalid marker geometry.');
+ const rows=[...paper.querySelectorAll('.mcqRow,.groupMcqRow,.boxRow,.coordRow,.shortRow')];
+ if(rows.length!==entries.length)throw new Error('Layout entries do not match the Answer Key ('+rows.length+' vs '+entries.length+'). Re-open the Answer Sheet and save the key again.');
+ function nx(x){return(x-tl.x)/dx}function ny(y){return(y-tl.y)/dy}
+ function normRect(r,padPx=2){
+   return{x0:nx(r.left-padPx),y0:ny(r.top-padPx),x1:nx(r.right+padPx),y1:ny(r.bottom+padPx)}
+ }
+ return entries.map((e,i)=>{
+   const row=rows[i],bubs=[...row.querySelectorAll('.bubble')];
+   if(bubs.length){
+     return{kind:'bubble',entryId:e.id,labels:bubs.map(x=>x.textContent.trim()),bubbles:bubs.map(x=>{const c=center(x);return{x:nx(c.x),y:ny(c.y),r:Math.max(.002,(c.w/2)/dx)}})};
+   }
+   let answerEls=[...row.querySelectorAll('.coordPairBox,.numValueBox,.shortField,.box')];
+   if(!answerEls.length)answerEls=[row];
+   return{kind:'hand',entryId:e.id,rect:normRect(unionRect(answerEls),4),boxCount:answerEls.length,boxRects:answerEls.map(x=>normRect(x.getBoundingClientRect(),2))};
+ });
+}
+function openCamera(){if(!currentKey||!currentMap){scanStatus.className='status bad';scanStatus.textContent='Wait until the Answer Key and scan layout are ready.';return}cameraInput.value='';cameraInput.click()}
+function openGallery(){if(!currentKey||!currentMap){scanStatus.className='status bad';scanStatus.textContent='Wait until the Answer Key and scan layout are ready.';return}galleryInput.value='';galleryInput.click()}
+
+async function photoSelected(ev){
+ const file=ev.target.files?.[0];if(!file)return;
+ if(!file.type?.startsWith('image/')){setScanStatus('Please choose an image file.','bad');return}
+ showPreview(file);setScanStatus('Opening photo…','warn');
+ try{
+   const source=await decodePhoto(file),imageData=imageToImageData(source);
+   setScanStatus('Finding the four black corner markers…','warn');
+   const pts=findFourMarkers(imageData);
+   setScanStatus('Straightening the answer sheet…','warn');
+   warpedImage=warpPage(imageData,pts,FRAME_W,FRAME_H);
+   setScanStatus('Reading bubble responses…','warn');
+   currentScan=readDynamicSheet(warpedImage,currentMap,currentKey.entries);
+   renderReview();
+   setScanStatus('Scan complete. Review orange and handwritten items before saving.','ok');
+ }catch(e){console.error(e);setScanStatus('Scan failed: '+e.message,'bad')}
+}
+function setScanStatus(t,kind=''){scanStatus.className='status '+kind;scanStatus.textContent=t}
+function showPreview(file){const url=URL.createObjectURL(file);photoPreview.onload=()=>URL.revokeObjectURL(url);photoPreview.src=url;photoPreview.style.display='block';photoPlaceholder.style.display='none'}
+async function decodePhoto(file){
+ if(window.createImageBitmap){try{return await createImageBitmap(file,{imageOrientation:'from-image'})}catch(e){try{return await createImageBitmap(file)}catch(e2){}}}
+ return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{URL.revokeObjectURL(u);res(img)};img.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('Could not open photo.'))};img.src=u});
+}
+function imageToImageData(source){
+ const c=capture,ctx=c.getContext('2d',{willReadFrequently:true}),sw=source.width||source.naturalWidth,sh=source.height||source.naturalHeight;
+ const maxLong=1900,scale=Math.min(1,maxLong/Math.max(sw,sh));let dw=Math.round(sw*scale),dh=Math.round(sh*scale);
+ if(dw>dh){c.width=dh;c.height=dw;ctx.save();ctx.translate(c.width,0);ctx.rotate(Math.PI/2);ctx.drawImage(source,0,0,dw,dh);ctx.restore()}
+ else{c.width=dw;c.height=dh;ctx.drawImage(source,0,0,dw,dh)}
+ return ctx.getImageData(0,0,c.width,c.height);
+}
+function findFourMarkers(img){
+ const w=img.width,h=img.height,win=Math.max(14,Math.round(w*.028)),xPad=Math.round(w*.025),yPad=Math.round(h*.018);
+ const tl=findMarkerOnWhite(img,xPad,Math.floor(w*.45),yPad,Math.floor(h*.34),win);
+ const tr=findMarkerOnWhite(img,Math.floor(w*.55),w-xPad,yPad,Math.floor(h*.34),win);
+ const bl=findMarkerOnWhite(img,xPad,Math.floor(w*.45),Math.floor(h*.66),h-yPad,win);
+ const br=findMarkerOnWhite(img,Math.floor(w*.55),w-xPad,Math.floor(h*.66),h-yPad,win);
+ if(!tl||!tr||!bl||!br)throw new Error('Could not find all 4 black corner squares. Keep the full sheet visible and avoid deep shadows.');
+ const top=dist(tl,tr),bottom=dist(bl,br),left=dist(tl,bl),right=dist(tr,br),ratio=((left+right)/2)/((top+bottom)/2);
+ if(Math.min(top,bottom,left,right)<w*.35)throw new Error('Move closer. The paper is too small in the photo.');
+ if(ratio<1.2||ratio>1.75)throw new Error('Corner geometry looks wrong. Retake the photo more directly above the paper.');
+ return{tl,tr,bl,br};
+}
+function findMarkerOnWhite(img,x0,x1,y0,y1,win){
+ const w=img.width,h=img.height,d=img.data;x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(w,Math.floor(x1));y1=Math.min(h,Math.floor(y1));
+ const dark=new Uint8Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const p=(y*w+x)*4,g=d[p]*.299+d[p+1]*.587+d[p+2]*.114;dark[y*w+x]=g<125?1:0}
+ const iw=w+1,integ=new Uint32Array((w+1)*(h+1));for(let y=1;y<=h;y++){let row=0;for(let x=1;x<=w;x++){row+=dark[(y-1)*w+(x-1)];integ[y*iw+x]=integ[(y-1)*iw+x]+row}}
+ function sum(ax,ay,bx,by){ax=Math.max(0,Math.floor(ax));ay=Math.max(0,Math.floor(ay));bx=Math.min(w,Math.floor(bx));by=Math.min(h,Math.floor(by));if(bx<=ax||by<=ay)return{sum:0,area:1};return{sum:integ[by*iw+bx]-integ[ay*iw+bx]-integ[by*iw+ax]+integ[ay*iw+ax],area:(bx-ax)*(by-ay)}}
+ const step=Math.max(2,Math.round(win/5)),outer=Math.max(win+6,Math.round(win*2.4)),ih=Math.floor(win/2),oh=Math.floor(outer/2);let best=null;
+ for(let cy=y0+oh;cy<y1-oh;cy+=step)for(let cx=x0+oh;cx<x1-oh;cx+=step){const inn=sum(cx-ih,cy-ih,cx-ih+win,cy-ih+win),out=sum(cx-oh,cy-oh,cx-oh+outer,cy-oh+outer),inner=inn.sum/inn.area;if(inner<.53)continue;const ring=Math.max(0,out.sum-inn.sum)/Math.max(1,out.area-inn.area),score=inner-.82*ring;if(!best||score>best.score)best={x:cx,y:cy,score}}
+ return best&&best.score>.25?best:null;
+}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function warpPage(src,pts,W,H){
+ const h=homography([{x:0,y:0},{x:W-1,y:0},{x:0,y:H-1},{x:W-1,y:H-1}],[pts.tl,pts.tr,pts.bl,pts.br]);
+ const out=new ImageData(W,H),sd=src.data,od=out.data,sw=src.width,sh=src.height;
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const den=h[6]*x+h[7]*y+1,sx=(h[0]*x+h[1]*y+h[2])/den,sy=(h[3]*x+h[4]*y+h[5])/den,ix=Math.round(sx),iy=Math.round(sy),op=(y*W+x)*4;if(ix>=0&&iy>=0&&ix<sw&&iy<sh){const sp=(iy*sw+ix)*4;od[op]=sd[sp];od[op+1]=sd[sp+1];od[op+2]=sd[sp+2];od[op+3]=255}else{od[op]=od[op+1]=od[op+2]=255;od[op+3]=255}}
+ warp.width=W;warp.height=H;warp.getContext('2d').putImageData(out,0,0);return out;
+}
+function homography(from,to){const A=[],b=[];for(let i=0;i<4;i++){const u=from[i].x,v=from[i].y,x=to[i].x,y=to[i].y;A.push([u,v,1,0,0,0,-x*u,-x*v]);b.push(x);A.push([0,0,0,u,v,1,-y*u,-y*v]);b.push(y)}return solve(A,b)}
+function solve(A,b){const n=b.length,M=A.map((r,i)=>r.slice().concat(b[i]));for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;[M[c],M[p]]=[M[p],M[c]];if(Math.abs(M[c][c])<1e-10)throw new Error('Perspective correction failed.');const d=M[c][c];for(let j=c;j<=n;j++)M[c][j]/=d;for(let r=0;r<n;r++)if(r!==c){const q=M[r][c];for(let j=c;j<=n;j++)M[r][j]-=q*M[c][j]}}return M.map(r=>r[n])}
+function sampleDark(img,nx,ny,r){const cx=nx*(img.width-1),cy=ny*(img.height-1),d=img.data,w=img.width,h=img.height;let sum=0,n=0,rr=r*r;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(dx*dx+dy*dy>rr)continue;const x=Math.round(cx+dx),y=Math.round(cy+dy);if(x<0||y<0||x>=w||y>=h)continue;const p=(y*w+x)*4,g=d[p]*.299+d[p+1]*.587+d[p+2]*.114;sum+=1-g/255;n++}return n?sum/n:0}
+
+function readDynamicSheet(img,map,entries){
+ const bubbleVals=[];map.forEach(m=>{if(m.kind==='bubble')m.bubbles.forEach(b=>bubbleVals.push(sampleDark(img,b.x,b.y,Math.max(2,Math.round(b.r*img.width*.48)))))});
+ const sorted=bubbleVals.slice().sort((a,b)=>a-b),baseline=sorted.length?(sorted[Math.floor(sorted.length*.55)]||0):0;
+ let auto=0,warnings=0,manual=0;
+ const responses=map.map((m,i)=>{
+   const e=entries[i];
+   if(m.kind==='bubble'){
+     const vals=m.bubbles.map(b=>sampleDark(img,b.x,b.y,Math.max(2,Math.round(b.r*img.width*.48))));
+     const ranked=vals.map((v,j)=>({v,j})).sort((a,b)=>b.v-a.v),top=ranked[0],second=ranked[1]||{v:0};
+     const filled=top.v>=baseline+.045,separated=(top.v-second.v)>=.020,answer=filled&&separated?m.labels[top.j]:'';
+     const uncertain=!answer;if(uncertain)warnings++;else auto++;
+     return{entryId:e.id,type:e.type,answer,uncertain,vals,labels:m.labels};
+   }
+   manual++;warnings++;
+   return{entryId:e.id,type:e.type,manual:true,crop:cropNorm(m.rect),answer:e.type==='coord'?{orderedPair:'',location:''}:e.type==='num'&&e.entryMode==='value'?{values:Array.from({length:e.values?.length||m.boxCount||1},()=> '')}:{text:''},uncertain:true};
+ });
+ return{responses,auto,manual,warnings};
+}
+function cropNorm(r){
+ const x0=Math.max(0,Math.floor(r.x0*FRAME_W)),y0=Math.max(0,Math.floor(r.y0*FRAME_H)),x1=Math.min(FRAME_W,Math.ceil(r.x1*FRAME_W)),y1=Math.min(FRAME_H,Math.ceil(r.y1*FRAME_H));
+ const w=Math.max(1,x1-x0),h=Math.max(1,y1-y0),c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(warp,x0,y0,w,h,0,0,w,h);return c.toDataURL('image/jpeg',.88);
+}
+function renderReview(){
+ if(!currentScan)return;
+ reviewCard.classList.remove('hidden');saveCard.classList.remove('hidden');
+ reviewList.innerHTML=currentScan.responses.map((r,i)=>reviewHTML(r,currentKey.entries[i],i)).join('');
+ refreshScore();reviewCard.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function reviewHTML(r,e,i){
+ let body='',note='';
+ if(!r.manual){
+   body='<div class="choiceRow">'+r.labels.map(x=>'<button class="choice '+(r.answer===x?'selected ':'')+(r.uncertain?'uncertain':'')+'" onclick="setBubble('+i+',\''+String(x).replace(/'/g,"\\'")+'\')">'+esc(x)+'</button>').join('')+'</div>';
+   note=r.uncertain?'Bubble was unclear or blank. Tap the learner\'s intended answer.':'Bubble read automatically.';
+ }else if(e.type==='coord'){
+   body='<div class="handReview"><img class="crop" src="'+r.crop+'"><div class="multiInputs"><input class="answerInput" placeholder="Ordered pair" oninput="setCoord('+i+',\'orderedPair\',this.value)"><input class="answerInput" placeholder="Quadrant / Axis / Origin" oninput="setCoord('+i+',\'location\',this.value)"></div></div>';
+   note='Type the two handwritten responses shown in the crop.';
+ }else if(e.type==='num'&&e.entryMode==='value'){
+   body='<div class="handReview"><img class="crop" src="'+r.crop+'"><div class="multiInputs">'+(e.values||[]).map((v,vi)=>'<input class="answerInput" placeholder="Value '+(vi+1)+'" oninput="setNum('+i+','+vi+',this.value)">').join('')+'</div></div>';
+   note='Type one whole numerical value for each printed box.';
+ }else{
+   body='<div class="handReview"><img class="crop" src="'+r.crop+'"><input class="answerInput" placeholder="Type learner answer" oninput="setText('+i+',this.value)"></div>';
+   note='Type the handwritten response shown in the crop.';
+ }
+ return '<div id="rev-'+i+'" class="reviewItem '+(r.uncertain?'problem':'')+'"><div class="reviewTop"><div class="reviewNo">'+esc(e.display)+'.</div><div><span class="typeTag">'+esc(typeName(e))+'</span></div><div class="answerArea">'+body+'</div></div><div class="reviewNote">'+esc(note)+'</div></div>';
+}
+function typeName(e){return e.type==='mcq'?'Multiple Choice':e.type==='tf'?'True / False':e.type==='groupmcq'?'Grouped MCQ':e.type==='coord'?'Ordered Pair + Location':e.type==='num'?'Numerical':e.type==='short'?'Short Answer':'Word / Text'}
+function setBubble(i,v){const r=currentScan.responses[i];r.answer=v;r.uncertain=false;document.getElementById('rev-'+i).classList.remove('problem');renderChoiceState(i);refreshScore()}
+function renderChoiceState(i){const el=document.getElementById('rev-'+i);if(!el)return;[...el.querySelectorAll('.choice')].forEach((b,j)=>b.classList.toggle('selected',b.textContent.trim()===currentScan.responses[i].answer))}
+function setCoord(i,k,v){currentScan.responses[i].answer[k]=v;currentScan.responses[i].uncertain=!String(currentScan.responses[i].answer.orderedPair||'').trim()||!String(currentScan.responses[i].answer.location||'').trim();document.getElementById('rev-'+i).classList.toggle('problem',currentScan.responses[i].uncertain);refreshScore()}
+function setNum(i,vi,v){currentScan.responses[i].answer.values[vi]=v;currentScan.responses[i].uncertain=currentScan.responses[i].answer.values.some(x=>!String(x||'').trim());document.getElementById('rev-'+i).classList.toggle('problem',currentScan.responses[i].uncertain);refreshScore()}
+function setText(i,v){currentScan.responses[i].answer.text=v;currentScan.responses[i].uncertain=!String(v||'').trim();document.getElementById('rev-'+i).classList.toggle('problem',currentScan.responses[i].uncertain);refreshScore()}
+function norm(s){return String(s??'').trim().toLowerCase().replace(/[−–—]/g,'-').replace(/\s+/g,' ')}
+function compact(s){return norm(s).replace(/\s+/g,'')}
+function accepts(student,key,kind='text'){
+ const opts=String(key??'').split('|').map(x=>kind==='coord'?compact(x):norm(x)).filter(Boolean),s=kind==='coord'?compact(student):norm(student);return !!s&&opts.includes(s);
+}
+function responseCorrect(r,e){
+ if(r.uncertain)return false;
+ if(e.type==='coord')return accepts(r.answer.orderedPair,e.orderedPair,'coord')&&accepts(r.answer.location,e.location);
+ if(e.type==='num'&&e.entryMode==='value'){const vals=r.answer.values||[],keys=e.values||[];return vals.length===keys.length&&keys.every((k,j)=>accepts(vals[j],k,'coord'))}
+ const ans=r.manual?r.answer.text:r.answer;return accepts(ans,e.answer);
+}
+function refreshScore(){
+ let score=0,total=0,answered=0,warn=0;
+ currentKey.entries.forEach((e,i)=>{const r=currentScan.responses[i],p=Number(e.points||0);total+=p;if(!r.uncertain)answered++;else warn++;if(responseCorrect(r,e))score+=p});
+ scoreMetric.textContent=score+' / '+total;autoMetric.textContent=currentScan.auto;manualMetric.textContent=currentScan.manual;warningMetric.textContent=warn;reviewProgress.textContent=answered+' / '+currentKey.entries.length+' reviewed';
+}
+function saveScan(){
+ if(!currentScan||!currentKey)return;
+ const learnerIdx=learnerSelect.value;if(learnerIdx===''){saveStatus.className='status bad';saveStatus.textContent='Select the learner before saving.';saveStatus.classList.remove('hidden');learnerSelect.focus();return}
+ const warnings=currentScan.responses.filter(r=>r.uncertain).length;if(warnings&&!confirm(warnings+' item(s) still need review. Save anyway?'))return;
+ const sheet=safeParse(localStorage.getItem(SHEET_DRAFT),null),learner=sheet?.learners?.[Number(learnerIdx)]||{name:'Unknown',section:'',id:''};
+ let score=0,total=0;currentKey.entries.forEach((e,i)=>{total+=Number(e.points||0);if(responseCorrect(currentScan.responses[i],e))score+=Number(e.points||0)});
+ const rec={scanId:'scan-'+Date.now(),keyId:currentKey.id,keyName:currentKey.name,learner,layout:Number(paperLayout.value),responses:currentScan.responses,score,totalPoints:total,capturedAt:new Date().toISOString()};
+ const scans=safeParse(localStorage.getItem(SCAN_REG),[]);scans.push(rec);localStorage.setItem(SCAN_REG,JSON.stringify(scans));localStorage.setItem('smartScannerCurrentScan',JSON.stringify(rec));
+ saveStatus.className='status ok';saveStatus.textContent='Saved: '+learner.name+' • '+score+'/'+total;saveStatus.classList.remove('hidden');setTimeout(rescan,700);
+}
+function rescan(){currentScan=null;warpedImage=null;reviewCard.classList.add('hidden');saveCard.classList.add('hidden');photoPreview.removeAttribute('src');photoPreview.style.display='none';photoPlaceholder.style.display='flex';setScanStatus('Ready for the next paper.','ok');window.scrollTo({top:0,behavior:'smooth'})}
+init();
+</script>
+</body>
+</html>
