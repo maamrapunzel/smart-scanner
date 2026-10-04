@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SMART Scanner — Scanner Test Sample</title>
+<style>
+:root{--ink:#252126;--muted:#756d74;--line:#e3dce1;--bg:#f6f3f5;--pink:#eb4f90;--dark:#1e1a1d;--green:#228e62;--blue:#3d8ed8;--amber:#b87911}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+button{font:inherit}.topbar{height:62px;background:var(--dark);color:#fff;display:flex;align-items:center;padding:0 18px;gap:12px}.logo{width:38px;height:38px;border-radius:10px;background:var(--pink);display:grid;place-items:center;font-weight:900}.brand b{display:block}.brand small{color:#cfc7cc}.spacer{flex:1}.pill{border:1px solid #ffffff35;border-radius:999px;padding:6px 10px;font-size:11px}
+.wrap{max-width:980px;margin:22px auto;padding:0 16px 50px}.hero h1{margin:0 0 6px;font-size:25px}.hero p{margin:0;color:var(--muted);line-height:1.5}.card{background:#fff;border:1px solid var(--line);border-radius:16px;margin-top:16px;overflow:hidden;box-shadow:0 8px 24px #6a48550d}.cardHead{padding:14px 17px;border-bottom:1px solid var(--line);background:#fcfafb}.cardHead h2{margin:0;font-size:17px}.cardBody{padding:17px}.btn{border:0;border-radius:10px;padding:10px 15px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}.primary{background:var(--pink);color:#fff}.green{background:var(--green);color:#fff}.blue{background:var(--blue);color:#fff}.light{background:#eee8ec;color:#3b3338}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.status{border:1px solid var(--line);border-radius:11px;padding:11px 12px;font-size:12px;line-height:1.45;background:#fcfafb}.status.ok{border-color:#a9dcc9;background:#f1fff9;color:#176448}.status.warn{border-color:#efd8a7;background:#fff9e8;color:#795815}.guide{display:grid;grid-template-columns:70px 1fr;gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden}.guide div{padding:9px 10px;border-bottom:1px solid #eee8eb}.guide div:nth-last-child(-n+2){border-bottom:0}.guide .n{font-weight:900;text-align:center;background:#faf7f9}.code{font-family:ui-monospace,Consolas,monospace;font-weight:800}.steps{line-height:1.65}.note{font-size:12px;color:var(--muted);line-height:1.5}.warnbox{background:#fff9e8;border:1px solid #efd8a7;border-radius:12px;padding:12px;color:#795815;font-size:12px;line-height:1.5}
+@media(max-width:650px){.actions .btn{flex:1}.guide{grid-template-columns:55px 1fr}}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="logo">SS</div><div class="brand"><b>SMART SCANNER</b><small>Controlled Test Sample</small></div><div class="spacer"></div><span class="pill">TEST SAMPLE V1</span></header>
+<main class="wrap">
+ <div class="hero"><h1>Scanner Test Sample</h1><p>This creates one known Answer Sheet + Answer Key so we can test the scanner with answers we already know.</p></div>
+
+ <section class="card">
+  <div class="cardHead"><h2>1. Load the Controlled Sample</h2></div>
+  <div class="cardBody">
+   <div class="warnbox"><b>Your current Answer Sheet draft will be backed up first.</b> After testing, use “Restore Previous Work” to put it back.</div>
+   <div class="actions">
+    <button class="btn primary" onclick="loadSample()">Load Test Sample</button>
+    <button class="btn light" onclick="restorePrevious()">Restore Previous Work</button>
+   </div>
+   <div id="status" class="status" style="margin-top:12px">Sample not loaded yet.</div>
+  </div>
+ </section>
+
+ <section class="card">
+  <div class="cardHead"><h2>2. Exact Answers to Write on the Printed Sheet</h2></div>
+  <div class="cardBody">
+   <div class="guide">
+    <div class="n">1</div><div>Shade <span class="code">B</span></div>
+    <div class="n">2</div><div>Shade <span class="code">C</span></div>
+    <div class="n">3</div><div>Shade <span class="code">A</span></div>
+    <div class="n">4</div><div>Shade <span class="code">D</span></div>
+    <div class="n">5a</div><div>Shade <span class="code">A</span></div>
+    <div class="n">5b</div><div>Shade <span class="code">C</span></div>
+    <div class="n">5c</div><div>Shade <span class="code">D</span></div>
+    <div class="n">6</div><div>Shade <span class="code">T</span></div>
+    <div class="n">7</div><div>Write <span class="code">M</span></div>
+    <div class="n">8</div><div>Write <span class="code">MATH</span>, one letter per box</div>
+    <div class="n">9</div><div>Write <span class="code">-3.5</span></div>
+    <div class="n">10</div><div>Write <span class="code">3</span> in Value 1 and <span class="code">6</span> in Value 2</div>
+    <div class="n">11</div><div>Ordered Pair: <span class="code">(-3,2)</span> &nbsp; Location: <span class="code">Quadrant II</span></div>
+    <div class="n">12</div><div>Write <span class="code">origin</span></div>
+   </div>
+   <div class="note" style="margin-top:10px">For the first test, use a dark pen and write clearly inside the boxes. This lets us separate scanner/calibration problems from difficult handwriting.</div>
+  </div>
+ </section>
+
+ <section class="card">
+  <div class="cardHead"><h2>3. Test Procedure</h2></div>
+  <div class="cardBody steps">
+   <b>A.</b> Click <b>Load Test Sample</b>.<br>
+   <b>B.</b> Open Answer Sheet Builder and go to Preview & Print. Print <b>A4 — 1 per page</b> first.<br>
+   <b>C.</b> Fill the printed paper using the exact answers above.<br>
+   <b>D.</b> Open Scanner, select <b>Scanner Test Sample — Key</b>, choose <b>A4</b>, then scan the paper.<br>
+   <b>E.</b> Screenshot the Review Scan screen. We can immediately see whether the issue is corner detection, bubble reading, handwriting OCR, or scoring.
+   <div class="actions">
+    <a class="btn blue" href="./answer-sheet-builder.html">Open Answer Sheet Builder</a>
+    <a class="btn green" href="./scanner.html?v=test-sample">Open Scanner</a>
+   </div>
+  </div>
+ </section>
+</main>
+<script>
+const DRAFT='smartScannerAnswerSheetDraft',REG='smartScannerAnswerKeys',CUR='smartScannerCurrentAnswerKey',BACKUP='smartScannerScannerTestBackup';
+function parse(s,f){try{return JSON.parse(s)}catch(e){return f}}
+function sampleSheet(){
+ const questions=[
+  {type:'mcq',labels:'ABCD'},{type:'mcq',labels:'ABCD'},{type:'mcq',labels:'ABCD'},{type:'mcq',labels:'ABCD'},
+  {type:'groupmcq',labels:'ABCD',subCount:3},
+  {type:'tf',labels:'TF'},
+  {type:'word',boxes:1},{type:'word',boxes:4},
+  {type:'num',entryMode:'value',boxes:1,neg:true,dec:true,frac:false,sci:false},
+  {type:'num',entryMode:'value',boxes:2,neg:false,dec:false,frac:false,sci:false},
+  {type:'coord',format:'pairLocation'},
+  {type:'short',kind:'short'}
+ ];
+ return{
+  step:5,
+  name:'Scanner Test Sample',
+  headers:[
+   {usage:'Name',enabled:true,label:'Name',width:'Large'},
+   {usage:'Assessment Title',enabled:true,label:'Scanner Test',width:'Medium'},
+   {usage:'Grade & Section',enabled:true,label:'Grade & Section',width:'Medium'},
+   {usage:'Other 1',enabled:true,label:'Score',width:'Medium'},
+   {usage:'Other 2',enabled:false,label:'',width:'Medium'},
+   {usage:'Other 3',enabled:false,label:'',width:'Medium'}
+  ],
+  mode:'personalized',includeId:false,idDigits:5,idLabel:'Student ID',
+  learners:[{name:'TEST LEARNER',sex:'Female',section:'Grade 8 - Test',id:''}],
+  questions
+ };
+}
+function signature(sheet){return JSON.stringify({name:sheet.name||'',questions:sheet.questions||[]})}
+function sampleKey(sheet){
+ const entries=[
+  {id:'1',display:'1',main:1,type:'mcq',labels:'ABCD',answer:'B',points:1},
+  {id:'2',display:'2',main:2,type:'mcq',labels:'ABCD',answer:'C',points:1},
+  {id:'3',display:'3',main:3,type:'mcq',labels:'ABCD',answer:'A',points:1},
+  {id:'4',display:'4',main:4,type:'mcq',labels:'ABCD',answer:'D',points:1},
+  {id:'5a',display:'5a',main:5,type:'groupmcq',labels:'ABCD',answer:'A',points:1},
+  {id:'5b',display:'5b',main:5,type:'groupmcq',labels:'ABCD',answer:'C',points:1},
+  {id:'5c',display:'5c',main:5,type:'groupmcq',labels:'ABCD',answer:'D',points:1},
+  {id:'6',display:'6',main:6,type:'tf',labels:'TF',answer:'T',points:1},
+  {id:'7',display:'7',main:7,type:'word',answer:'M',points:1,meta:sheet.questions[6]},
+  {id:'8',display:'8',main:8,type:'word',answer:'MATH',points:1,meta:sheet.questions[7]},
+  {id:'9',display:'9',main:9,type:'num',entryMode:'value',values:['-3.5'],points:1,meta:sheet.questions[8]},
+  {id:'10',display:'10',main:10,type:'num',entryMode:'value',values:['3','6'],points:1,meta:sheet.questions[9]},
+  {id:'11',display:'11',main:11,type:'coord',orderedPair:'(-3,2)',location:'Quadrant II',points:1},
+  {id:'12',display:'12',main:12,type:'short',answer:'origin',points:1,meta:sheet.questions[11]}
+ ];
+ const now=new Date().toISOString();
+ return{id:'scanner-test-key-v1',name:'Scanner Test Sample — Key',sourceSheetName:sheet.name,sourceSignature:signature(sheet),sourceQuestions:sheet.questions,entries,totalPoints:14,createdAt:now,updatedAt:now};
+}
+function loadSample(){
+ const existingBackup=parse(localStorage.getItem(BACKUP),null);
+ if(!existingBackup){
+   localStorage.setItem(BACKUP,JSON.stringify({draft:localStorage.getItem(DRAFT),current:localStorage.getItem(CUR)}));
+ }
+ const sheet=sampleSheet(),key=sampleKey(sheet);
+ localStorage.setItem(DRAFT,JSON.stringify(sheet));
+ let reg=parse(localStorage.getItem(REG),[]);if(!Array.isArray(reg))reg=[];
+ const ix=reg.findIndex(x=>x.id===key.id);if(ix>=0)reg[ix]=key;else reg.push(key);
+ localStorage.setItem(REG,JSON.stringify(reg));localStorage.setItem(CUR,JSON.stringify(key));
+ status.className='status ok';status.innerHTML='<b>Test sample loaded.</b> Open Answer Sheet Builder, print A4, then fill it using the guide below.';
+}
+function restorePrevious(){
+ const b=parse(localStorage.getItem(BACKUP),null);
+ if(!b){status.className='status warn';status.textContent='No previous-work backup found on this device.';return}
+ if(b.draft===null)localStorage.removeItem(DRAFT);else localStorage.setItem(DRAFT,b.draft);
+ if(b.current===null)localStorage.removeItem(CUR);else localStorage.setItem(CUR,b.current);
+ localStorage.removeItem(BACKUP);
+ status.className='status ok';status.innerHTML='<b>Previous Answer Sheet / current Answer Key restored.</b>';
+}
+</script>
+</body>
+</html>
