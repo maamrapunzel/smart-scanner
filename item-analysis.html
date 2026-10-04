@@ -29,7 +29,7 @@ label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}.field,sele
 <main class="wrap">
  <div class="hero">
   <div><h1>Item Analysis</h1><p>Uses saved scan results from SMART Scanner. View class performance and identify which items need reteaching or review.</p></div>
-  <div class="actions"><a class="btn light" href="./scanner.html">← Scanner</a><button class="btn blue" onclick="window.print()">Print Report</button><button class="btn green" onclick="exportCSV()">Export CSV</button></div>
+  <div class="actions"><a class="btn light" href="./scanner.html">← Scanner</a><button class="btn primary" onclick="generateSampleResults()">Generate Sample Results</button><button class="btn light" onclick="removeSampleResults()">Remove Sample Results</button><button class="btn blue" onclick="window.print()">Print Report</button><button class="btn green" onclick="exportCSV()">Export CSV</button></div>
  </div>
 
  <section class="card controls">
@@ -102,6 +102,7 @@ label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}.field,sele
 
 <script>
 const KEY_REG='smartScannerAnswerKeys',CURRENT_KEY='smartScannerCurrentAnswerKey',SCAN_REG='smartScannerScans',SHEET_DRAFT='smartScannerAnswerSheetDraft';
+const SAMPLE_TAG='SMART_ITEM_ANALYSIS_SAMPLE_V1';
 let currentAnalysis=[],currentSexSummary=[],currentScoreDistribution=[];
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -180,7 +181,8 @@ function renderAll(){
  const passed=ss.filter(s=>Number(s.totalPoints||totalPts)>0&&(Number(s.score||0)/Number(s.totalPoints||totalPts)*100)>=pass).length;
  const highCount=scores.length?scores.filter(x=>x===high).length:0,lowCount=scores.length?scores.filter(x=>x===low).length:0;
  mScanned.textContent=ss.length;mMean.textContent=fmt(mean,2)+' / '+fmt(totalPts,2);mMps.textContent=fmt(mps,1)+'%';mHigh.textContent=fmt(high,2)+(ss.length?' • '+highCount:'');mLow.textContent=fmt(low,2)+(ss.length?' • '+lowCount:'');mPassed.textContent=passed;mRate.textContent=ss.length?fmt(passed/ss.length*100,1)+'%':'0%';
- summaryStatus.className='status '+(ss.length?'ok':'warn');summaryStatus.textContent=ss.length?(key.name+' • '+ss.length+' saved scan result'+(ss.length===1?'':'s')+' included. Highest/Lowest cards also show how many learners obtained those scores.'):'No saved scan results yet for '+key.name+'. The table below will populate after scan results are saved.';
+ const sampleCount=ss.filter(s=>s.sampleTag===SAMPLE_TAG).length;
+ summaryStatus.className='status '+(ss.length?'ok':'warn');summaryStatus.textContent=ss.length?(key.name+' • '+ss.length+' saved scan result'+(ss.length===1?'':'s')+' included'+(sampleCount?' • '+sampleCount+' SAMPLE':'')+'. Highest/Lowest cards also show how many learners obtained those scores.'):'No saved scan results yet for '+key.name+'. You can use Generate Sample Results to test the analysis without the scanner.';
  buildSexSummary(ss,totalPts,pass);
  buildScoreDistribution(ss,totalPts,pass);
  buildItems(key,ss);
@@ -229,6 +231,79 @@ function buildItems(key,ss){
    return '<tr><td class="num"><b>'+esc(r.item)+'</b></td><td>'+esc(r.type)+'</td><td class="key">'+esc(r.key||'—')+'</td><td>'+responseCounts+'</td><td class="num">'+r.blank+'</td><td class="num">'+r.correct+'</td><td class="num">'+r.wrong+'</td><td class="num"><b>'+fmt(r.pct,1)+'%</b></td><td><span class="badge '+r.interp.cls+'">'+esc(r.interp.label)+'</span></td><td>'+esc(r.interp.action)+'</td></tr>';
  }).join(''):'<tr><td colspan="10" class="empty">No answer entries found.</td></tr>';
 }
+
+function firstAlias(v){
+ return String(v??'').split('|').map(x=>x.trim()).filter(Boolean)[0]||'';
+}
+function correctSampleAnswer(e){
+ if(e.type==='coord')return {orderedPair:firstAlias(e.orderedPair),location:firstAlias(e.location)};
+ if(e.type==='num'&&e.entryMode==='value')return {values:(e.values||[]).map(firstAlias)};
+ if(e.type==='mcq'||e.type==='tf'||e.type==='groupmcq')return firstAlias(e.answer);
+ return {text:firstAlias(e.answer)};
+}
+function wrongSampleAnswer(e){
+ if(e.type==='coord')return {orderedPair:'(99,99)',location:'WRONG'};
+ if(e.type==='num'&&e.entryMode==='value')return {values:(e.values||[]).map(()=> '99999')};
+ if(e.type==='mcq'||e.type==='tf'||e.type==='groupmcq'){
+   const labels=String(e.labels||'ABCD').split('');
+   const correct=firstAlias(e.answer);
+   return labels.find(x=>!accepts(x,correct))||'X';
+ }
+ return {text:'WRONG'};
+}
+function blankSampleAnswer(e){
+ if(e.type==='coord')return {orderedPair:'',location:''};
+ if(e.type==='num'&&e.entryMode==='value')return {values:(e.values||[]).map(()=> '')};
+ if(e.type==='mcq'||e.type==='tf'||e.type==='groupmcq')return '';
+ return {text:''};
+}
+function makeSampleResponse(e,mode){
+ const manual=!(e.type==='mcq'||e.type==='tf'||e.type==='groupmcq');
+ const answer=mode==='correct'?correctSampleAnswer(e):mode==='blank'?blankSampleAnswer(e):wrongSampleAnswer(e);
+ return {entryId:e.id,type:e.type,manual,answer,uncertain:false,sample:true};
+}
+function generateSampleResults(){
+ const key=selectedKey();
+ if(!key||!Array.isArray(key.entries)||!key.entries.length){alert('Create or select an Answer Key first.');return}
+ let all=scans().filter(s=>!(s.sampleTag===SAMPLE_TAG&&s.keyId===key.id));
+ const rates=[1,.9,.8,.8,.7,.7,.6,.6,.5,.4,.3,.2];
+ const names=['Alex Cruz','Bianca Reyes','Carlo Santos','Diana Garcia','Ethan Flores','Faith Mendoza','Gabriel Ramos','Hannah Bautista','Ivan Navarro','Julia Aquino','Kyle Domingo','Lara Castillo'];
+ const sexes=['Male','Female','Male','Female','Male','Female','Male','Female','Male','Female','Male','Female'];
+ const totalPts=Number(key.totalPoints||key.entries.reduce((s,e)=>s+Number(e.points||0),0));
+ const made=[];
+ rates.forEach((rate,li)=>{
+   const correctLimit=Math.round(key.entries.length*rate);
+   let score=0;
+   const responses=key.entries.map((e,i)=>{
+     let mode=i<correctLimit?'correct':'wrong';
+     if(mode==='wrong'&&((i+li)%7===0))mode='blank';
+     const rr=makeSampleResponse(e,mode);
+     if(mode==='correct')score+=Number(e.points||0);
+     return rr;
+   });
+   made.push({
+     scanId:'sample-'+key.id+'-'+String(li+1).padStart(2,'0'),
+     keyId:key.id,keyName:key.name,
+     learner:{name:names[li],sex:sexes[li],section:'SAMPLE SECTION',id:'S'+String(li+1).padStart(3,'0')},
+     layout:1,responses,score,totalPoints:totalPts,
+     capturedAt:new Date(Date.now()+li*1000).toISOString(),
+     sampleTag:SAMPLE_TAG,isSample:true
+   });
+ });
+ localStorage.setItem(SCAN_REG,JSON.stringify(all.concat(made)));
+ renderAll();
+ alert('12 sample results created: 6 Male and 6 Female. These are sample data and can be removed anytime.');
+}
+function removeSampleResults(){
+ const key=selectedKey();
+ let all=scans();
+ const before=all.length;
+ all=all.filter(s=>!(s.sampleTag===SAMPLE_TAG&&(!key||s.keyId===key.id)));
+ localStorage.setItem(SCAN_REG,JSON.stringify(all));
+ renderAll();
+ alert((before-all.length)+' sample result(s) removed.');
+}
+
 function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"'}
 function exportCSV(){
  const key=selectedKey();if(!key){alert('No item analysis to export yet.');return}
